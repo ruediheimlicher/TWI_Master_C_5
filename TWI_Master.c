@@ -2563,6 +2563,9 @@ wieder adressierbar.
 							LeseStatus=0;
 						}
 						
+                  outbuffer[43] = LeseStatus;
+                  outbuffer[44] = SchreibStatus;
+                  
 						err_clr_line(1);
 						err_gotoxy(12,1);
 						err_putc('R');
@@ -2619,7 +2622,7 @@ wieder adressierbar.
 								uint8_t i=0;
 								for (i=0 ; i<SPI_BUFSIZE; i++) 
 								{
-									outbuffer[i]=0;
+									//outbuffer[i]=0;
 								}
 								//err_gotoxy(15,0);
 								//err_putc('U');
@@ -4349,12 +4352,12 @@ wieder adressierbar.
                         
                         for (int i=44;i<48;i++)
                         {
-                           outbuffer[i]= i;
+                           //outbuffer[i]= i;
                         }
                         
                         for (int i=0;i<8;i++)
                         {
-                           outbuffer[i+36]= EEPROMTXdaten[i];
+                           //outbuffer[i+36]= EEPROMTXdaten[i];
                         }
 
 								//	Warten auf nŠchsten Timerevent
