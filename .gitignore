@@ -1,5 +1,5 @@
 build
-Datum*
+*Datum*
 Log*
 IOWarrior 
 *.eep
@@ -10,4 +10,9 @@ IOWarrior
 *.map
 *.o
 *.sym
+*.sh
 *.xcodeproj
+*.script
+*Source*
+
+
