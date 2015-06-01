@@ -2130,20 +2130,20 @@ wieder adressierbar.
 							//delay_ms(2);
 						}
 						
-						err_gotoxy(0,1);
-						err_puts("wE \0");
+						lcd_gotoxy(0,1);
+						lcd_puts("wE \0");
 						
-						err_puthex(in_startdaten);
-						err_putc(' ');
+						lcd_puthex(in_startdaten);
+						lcd_putc(' ');
 						
 						//Empfangene Angaben vom EEPRPOM
-						err_puthex(in_hbdaten);
-						err_puthex(in_lbdaten);
-						err_putc(' ');
-						err_puthex(EEPROMTXdaten[0]);
-						err_puthex(EEPROMTXdaten[1]);	
-						err_puthex(EEPROMTXdaten[2]);
-						err_puthex(EEPROMTXdaten[3]);
+						lcd_puthex(in_hbdaten);
+						lcd_puthex(in_lbdaten);
+						lcd_putc(' ');
+						lcd_puthex(EEPROMTXdaten[0]);
+						lcd_puthex(EEPROMTXdaten[1]);
+						lcd_puthex(EEPROMTXdaten[2]);
+						lcd_puthex(EEPROMTXdaten[3]);
 						
 						
 						uint8_t eepromerfolg=0;
