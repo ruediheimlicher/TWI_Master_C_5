@@ -2520,7 +2520,7 @@ wieder adressierbar.
                            lcd_putc(':');
                            lcd_putint2(DCF77daten[0]);
                            lcd_putc(':');
-                           lcd_putint1(DCF77daten[5]-1);
+                           lcd_putint1(DCF77daten[5]);
                         }
                         lcd_gotoxy(16, 1);
                         lcd_puts("   \0");
@@ -2544,7 +2544,10 @@ wieder adressierbar.
                      }
                      // Ende Synchronisation
                   } // if NOT test
-						
+                  outbuffer[46] = DCF77daten[1];
+                  outbuffer[47] = DCF77daten[0];
+                  outbuffer[45] = DCF77daten[5];
+
                   // ++++++++++++++++++++++++++++++++
                   // End NOT TEST
                   // ++++++++++++++++++++++++++++++++						
