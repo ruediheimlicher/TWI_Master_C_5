@@ -2544,10 +2544,21 @@ wieder adressierbar.
                      }
                      // Ende Synchronisation
                   } // if NOT test
+                  
+                  
                   outbuffer[46] = DCF77daten[1];
                   outbuffer[47] = DCF77daten[0];
                   outbuffer[45] = DCF77daten[5];
-
+                  
+                  outbuffer[40] = RTCdaten[2]; // tagdesmonats
+                  
+                  outbuffer[41] = RTCdaten[3] & 0x0F; //  monat
+                  
+                  uint8_t jahrab2010 = RTCdaten[4]  -10; // Jahr ab 2010
+                  jahrab2010 <<=4; // bit
+                  outbuffer[41] |= jahrab2010  ;
+ 
+                  
                   // ++++++++++++++++++++++++++++++++
                   // End NOT TEST
                   // ++++++++++++++++++++++++++++++++						
