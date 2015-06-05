@@ -1500,9 +1500,9 @@ int main (void)
 			{
 				//				timer2(0xAF);
 				//				sei();
-				//SPI_shift();
-				
+				//SPI_shift();				
 			}
+         
 			
 			if (loopcount1>=0x2F)
 			{
@@ -4536,7 +4536,7 @@ wieder adressierbar.
 	#pragma mark Taste 0	
 		
 		wdt_reset();
-		
+		/*
 		// TWI mit Taste toggeln
 		if (!(PINB & (1<<PORTB0))) // Taste 0 TWI Ein/Aus
 		{
@@ -4601,7 +4601,7 @@ wieder adressierbar.
 			}//else
 			
 		}
-		
+		*/
 		wdt_reset();
 		
 		if (!(PINB & (1<<PB1))) // Taste 1
