@@ -2546,10 +2546,14 @@ wieder adressierbar.
                   } // if NOT test
                   
                   
-                  outbuffer[46] = DCF77daten[1];
-                  outbuffer[47] = DCF77daten[0];
-                  outbuffer[45] = DCF77daten[5];
-                  
+                 // outbuffer[46] = DCF77daten[1];
+                 // outbuffer[47] = DCF77daten[0];
+                 // outbuffer[45] = DCF77daten[5];
+
+                  outbuffer[46] = RTCdaten[1];
+                  outbuffer[47] = RTCdaten[0];
+                  outbuffer[45] = RTCdaten[5];
+
                   outbuffer[40] = RTCdaten[2]; // tagdesmonats
                   
                   outbuffer[41] = RTCdaten[3] & 0x0F; //  monat
@@ -4280,7 +4284,7 @@ wieder adressierbar.
 										//		outbuffer[i]=EstrichRXdaten[i];			// Fuer Test: Daten ab Byte 0 von outbuffer
 										outbuffer[estrich +i]=EstrichRXdaten[i]; // Daten ab Byte 'estrich' von outbuffer Byte 9
 									}
-									
+									outbuffer[38] =EstrichRXdaten[5];
 									
 									LeseStatus &= ~(1<< ESTRICH); // erledigt
 								}
@@ -4349,6 +4353,9 @@ wieder adressierbar.
 							 err_puthex(Write_Err);
 							 err_putc('E');
 							 err_puthex(EEPROM_Err);
+                     err_gotoxy(12,0);
+                     err_putc('>');
+                     err_puthex(outbuffer[38]);
 							 							
 							if (twi_Call_count0==twi_Reply_count0) // alles OK
 							{
