@@ -120,7 +120,7 @@ static char SolarString[48];
 //static char* sstr;
 
 
-#define test 0
+//#define test 0
 
 
 #define SCLPIN		0
@@ -371,6 +371,7 @@ volatile uint8_t txbuffer[buffer_size];//={0,0,0,0,0,0,0,0};
 //volatile uint8_t txstartbuffer=0;
 uint8_t senderfolg=0;
 
+volatile uint8_t  test =0; // Anzahl gueltige Datumspakete in Folge
 
 
 static volatile uint8_t StartDaten;
@@ -790,7 +791,7 @@ void masterinit(void)
 	//	DDRC &= ~(1<<DDC0);	//Pin 0 von PORT C als Eingang fuer TWI SCL
 	
 	
-	DDRB &= ~(1<<DDB0);	//Pin 0 von PORT B als Eingang fuer Taster 0
+	DDRB &= ~(1<<DDB0);	//Pin 0 von PORT B als Eingang fuer Test
 	PORTB |= (1<<DDB0); //Pull-up
 	
 	DDRB &= ~(1<<DDB1);	//Pin 1 von PORT B als Eingang fuer Taster 1
@@ -1385,8 +1386,21 @@ int main (void)
 	uhrstatus |= (1<<SYNC_NULL); // Uhr undef, warten auf DCF77
 	
 	initOSZI();
-	/******************************************************************/
-	
+   
+   if (PINB & (1<<0))
+   {
+      
+      test=0;
+      
+   }
+   else
+   {
+      test=1;
+
+   }
+   
+   /******************************************************************/
+
 	/*** Hauptschleife															***/
 	
 	/******************************************************************/
@@ -1438,7 +1452,8 @@ int main (void)
 				
 				// stunde, minute, sekunde
 				res=rtc_write_Zeit(14,38,0);// uint8_t stunde, uint8_t minute, uint8_t sekunde
-				delay_ms(10);
+
+            delay_ms(10);
 				/*
 				if (res)
 				{
@@ -2286,7 +2301,12 @@ wieder adressierbar.
                   // ++++++++++++++++++++++++++++++++
                   if (test)
                   {
-                     uint8_t DCF77_erfolg = UhrAbrufen();
+                     
+                     uhrstatus &= ~(1<<SYNC_READY);
+                     uhrstatus |= (1<<SYNC_OK);
+                     uhrstatus &= ~(1<<SYNC_NEW);                 // TWI soll jetzt Daten senden
+
+                     //uint8_t DCF77_erfolg = UhrAbrufen();
                      
                      
                      /*
@@ -2301,10 +2321,7 @@ wieder adressierbar.
                       DCF77daten[3] = 10; // Monat
                       DCF77daten[4] = 15; // Jahr
                       DCF77daten[5] = 1; // Wochentag
-                      uhrstatus &= ~(1<<SYNC_READY);
-                      uhrstatus |= (1<<SYNC_OK);
-                      uhrstatus &= ~(1<<SYNC_NEW);                 // TWI soll jetzt Daten senden
-
+ 
                       res=rtc_write_Datum(DCF77daten[5], DCF77daten[2], DCF77daten[3],DCF77daten[4]);//wochentag (1 = Montag), tagdesmonats, monat, jahr (2-stellig)
 
                       
@@ -2383,9 +2400,22 @@ wieder adressierbar.
                      
                      // Synchronisation
                      
+                     if (test)
+                     {
+                        uhrstatus |=  (1<<SYNC_OK);
+                        uhrstatus &= ~(1<<SYNC_WAIT);
+                        uhrstatus &= ~(1<<SYNC_NULL);
+                     }
+                     
                      // alle 60 Min: Warten starten
                      if ((((min/30)&&(min%30==0)&&(std<23))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
                      {
+                        if (test)
+                        {
+                           
+                        }
+                        else
+                        {
                         uhrstatus &= ~(1<<SYNC_OK);
                         uhrstatus |= (1<<SYNC_WAIT); // Beginn Sync, Warten starten
                         DCF77_counter=0; // Zaehler fuer korrekte Daten
@@ -2395,8 +2425,10 @@ wieder adressierbar.
                         
                         lcd_gotoxy(0,1);
                         lcd_puts("S     \0");
+                        }
                         
                      }
+                     
                      
                      if (uhrstatus & (1<<SYNC_WAIT)) // Warten auf genuegende Anzahl korrekter Daten
                      {
@@ -4332,7 +4364,7 @@ wieder adressierbar.
 							 err_puthex(Write_Err);
 							 err_putc('E');
 							 err_puthex(EEPROM_Err);
-							 							
+							 delay_ms(1000);
 							if (twi_Call_count0==twi_Reply_count0) // alles OK
 							{
 								//err_puts("OK\0");
@@ -4349,7 +4381,7 @@ wieder adressierbar.
                         
                         for (int i=44;i<48;i++)
                         {
-                           outbuffer[i]= i;
+                           //outbuffer[i]= i;
                         }
                         
                         for (int i=0;i<8;i++)
@@ -4374,7 +4406,7 @@ wieder adressierbar.
 								
 								TWCR =0;
 								
-								delay_ms(10);
+								delay_ms(1000);
 								
 								//	TWI neu starten
 								i2c_init();
@@ -4512,7 +4544,8 @@ wieder adressierbar.
 	#pragma mark Taste 0	
 		
 		wdt_reset();
-		
+	
+      /*
 		// TWI mit Taste toggeln
 		if (!(PINB & (1<<PORTB0))) // Taste 0 TWI Ein/Aus
 		{
@@ -4577,7 +4610,7 @@ wieder adressierbar.
 			}//else
 			
 		}
-		
+		*/
 		wdt_reset();
 		
 		if (!(PINB & (1<<PB1))) // Taste 1
