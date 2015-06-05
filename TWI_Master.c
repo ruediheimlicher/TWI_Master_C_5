@@ -120,7 +120,7 @@ static char SolarString[48];
 //static char* sstr;
 
 
-#define test 0
+#define test 1
 
 
 #define SCLPIN		0
