@@ -372,7 +372,8 @@ volatile uint8_t txbuffer[buffer_size];//={0,0,0,0,0,0,0,0};
 uint8_t senderfolg=0;
 
 volatile uint8_t  test =0; // Anzahl gueltige Datumspakete in Folge
-
+volatile uint16_t  testcounterL =0; // ZŠhler fuer timer0: Takt fuer SPI bei test
+volatile uint16_t  testcounterH =0;
 
 static volatile uint8_t StartDaten;
 
@@ -675,15 +676,25 @@ void timer0 (void)
 	TCCR0B |= (1<<CS00)|(1<<CS02);	//Takt /1024
 	//TCCR0B |= (1<<CS02);				//8-Bit Timer, Timer clock = system clock/256
 	//	TCCR0 |= (1<<CS00)|(1<<CS01);	//Takt /64
-	OCR0A=0xFF;
+	
+   //OCR0A=0xFF;
 	
 	
-	TIFR0 |= (1<<TOV0); 				//Clear TOV0 Timer/Counter Overflow Flag. clear pending interrupts
-	TIMSK0 |= (1<<TOIE0);			//Overflow Interrupt aktivieren
+	//TIFR0 |= (1<<TOV0); 				//Clear TOV0 Timer/Counter Overflow Flag. clear pending interrupts
+	//TIMSK0 |= (1<<TOIE0);			//Overflow Interrupt aktivieren
 	//	TIMSK0 |= OCIE0A;					// Clear Timer on Compare Match, CTC
 	TCNT0=0x00;						//RŸcksetzen des Timers
 	
-} 
+}
+
+ISR (TIMER0_OVF_vect)
+{
+   testcounterL++;
+   if (testcounterL ==0) // hochzaehlen
+   {
+      testcounterH++;
+   }
+}
 
 #pragma mark TIMER2
 void timer2 (uint8_t wert) 
@@ -1138,6 +1149,7 @@ uint8_t RTC_Abrufen (void)
    
    if (test)
    {
+      /*
       err_gotoxy(6, 1);
       switch (wochentag)
       {
@@ -1164,6 +1176,7 @@ uint8_t RTC_Abrufen (void)
             break;
             
       }//switch wochentag
+       */
    }
 
    err_gotoxy(2,0);
@@ -1500,6 +1513,8 @@ int main (void)
 			//err_gotoxy(10,1); 
 			//err_puthex(startdelay);
 		}
+      
+      #pragma mark Standardloop start
 		
 		loopcount0++;
 		if (loopcount0 >= 0x00FF)
@@ -1522,13 +1537,6 @@ int main (void)
 			if (loopcount1>=0x2F)
 			{
             
-				if (test) // Start der TWI-Routinen ohne Webserver
-				{
-					spistatus |= (1<<SPI_SHIFT_IN_OK_BIT);
-					err_gotoxy(18,0);
-					err_puts("T\0");
-				
-				}
 				//lcd_gotoxy(2,1);
 				//lcd_puts("Wechsel \0");
 				//lcd_puthex(loopcount1);
@@ -1536,6 +1544,24 @@ int main (void)
 			}
 			
 		}
+      
+      if (test) // Start der TWI-Routinen ohne Webserver
+      {
+         if ((testcounterH) >>= 4)
+         {
+            err_gotoxy(16,0);
+            err_puthex((testcounterH) >>= 4);
+         }
+         if (testcounterH > 0xFFF)
+         {
+            spistatus |= (1<<SPI_SHIFT_IN_OK_BIT);
+            err_gotoxy(18,0);
+            err_puts("T\0");
+            testcounterH=0;
+         }
+         
+      }
+
 		
 		
 		//	Checken, ob SCL oder SDA lŠngere Zeit low sind. 
@@ -1546,71 +1572,71 @@ int main (void)
 		// SDA und SCL sind laengere Zeit nicht gleichzeitig HI: Fehlersituation
 		
 		if (((startdelay==0)||(startdelay==STARTDELAY))&& (((!(PINC & (1<<SDAPIN))) && PINC & (1<<SCLPIN)) ) )// SDA ist LO und SCL ist HI (warten auf Ack)
-		{
-			err_gotoxy(15,1);
-			err_puts("ERR\0");
-
-			/*
-			
-1. TWI Modul am Master abschalten.
-2. Am Master SDA als Input und SCL als Output konfigurieren.
-3. SCL im TWI Takt so lange toggeln bis SDA wieder high ist
-4. TWI wieder initialisieren und weiter machen ...
-
-Du mu§t also das HW-TWI abschalten und per SW-I2C einen SCL-Puls
-generieren und dann versuchen, Stop zu senden. Erst dann ist der Slave
-wieder adressierbar.
-			*/
+      {
+         err_gotoxy(15,1);
+         err_puts("ERR\0");
          
-			// Zaehlen, wieviele Runden der Fehler dauert
-			twi_LO_count0++;
-			
-			// nach einer Anzahl Runden  die zweite Anzahl twi_LO_count1 inkrementieren
-			if (twi_LO_count0 >=0xAFF)
-			{
-				twi_LO_count0=0;
-				twi_LO_count1++;
-				err_gotoxy(0,1);
-				err_puts("lc1 \0");
-				err_puthex(twi_LO_count1);
-				
-				// Erste Grenze von twi_LO_count1 erreicht, also erneut stop senden
-				if (twi_LO_count1>=0x0F) //	
-				{
-					//					PORTC |= (1<<TWICOUNTPIN); //TWI-LED ON
-					
-					// TWI-Fehler inkrementieren
-					twierrcount++;
-					outbuffer[30]=twierrcount;
-					// Wenn Fehler andauert, TWI neu starten
-					if (twi_LO_count1 >=0xAF) // 
-					{
-						err_gotoxy(12,0);
-						err_puts("deb\0");
-						TWBR =0;
-						TWCR =0;
-						
-						uint8_t deb=i2c_debloc();
-						err_puthex(deb);
+         /*
+          
+          1. TWI Modul am Master abschalten.
+          2. Am Master SDA als Input und SCL als Output konfigurieren.
+          3. SCL im TWI Takt so lange toggeln bis SDA wieder high ist
+          4. TWI wieder initialisieren und weiter machen ...
+          
+          Du mu§t also das HW-TWI abschalten und per SW-I2C einen SCL-Puls
+          generieren und dann versuchen, Stop zu senden. Erst dann ist der Slave
+          wieder adressierbar.
+          */
+         
+         // Zaehlen, wieviele Runden der Fehler dauert
+         twi_LO_count0++;
+         
+         // nach einer Anzahl Runden  die zweite Anzahl twi_LO_count1 inkrementieren
+         if (twi_LO_count0 >=0xAFF)
+         {
+            twi_LO_count0=0;
+            twi_LO_count1++;
+            err_gotoxy(0,1);
+            err_puts("lc1 \0");
+            err_puthex(twi_LO_count1);
+            
+            // Erste Grenze von twi_LO_count1 erreicht, also erneut stop senden
+            if (twi_LO_count1>=0x0F) //
+            {
+               //					PORTC |= (1<<TWICOUNTPIN); //TWI-LED ON
+               
+               // TWI-Fehler inkrementieren
+               twierrcount++;
+               outbuffer[30]=twierrcount;
+               // Wenn Fehler andauert, TWI neu starten
+               if (twi_LO_count1 >=0xAF) //
+               {
+                  err_gotoxy(12,0);
+                  err_puts("deb\0");
+                  TWBR =0;
+                  TWCR =0;
+                  
+                  uint8_t deb=i2c_debloc();
+                  err_puthex(deb);
                   delay_ms(10);
-						TWI_DDR &= ~(1<<SCL_PIN);	// SCL-Pin wieder als EINgang
-						TWI_PORT |= (1<<SCL_PIN);  // HI
-						
-						delay_ms(10);
-						i2c_init();
-						rtc_init();
-						i2c_stop();
-						wdt_reset();
-					}
-					//err_gotoxy(10,1);
-					//err_puts("st\0");
-					//err_puthex(twi_LO_count1);
-					//delay_ms(10);
-					
-				}
-			}
-			
-		}
+                  TWI_DDR &= ~(1<<SCL_PIN);	// SCL-Pin wieder als EINgang
+                  TWI_PORT |= (1<<SCL_PIN);  // HI
+                  
+                  delay_ms(10);
+                  i2c_init();
+                  rtc_init();
+                  i2c_stop();
+                  wdt_reset();
+               }
+               //err_gotoxy(10,1);
+               //err_puts("st\0");
+               //err_puthex(twi_LO_count1);
+               //delay_ms(10);
+               
+            }
+         }
+         
+      }
       
 		else // alles in Ordnung, Fehler zuruecksetzen
 		{
@@ -2302,38 +2328,31 @@ wieder adressierbar.
                   if (test)
                   {
                      
+                     uint8_t RTC_erfolg=1;
+                     uint8_t versuche=0;
+                     // RTC lesen
+                     while (RTC_erfolg && versuche<0x0F)
+                     {
+                        RTC_erfolg = RTC_Abrufen();
+                        err_gotoxy(4,0);
+                        err_puts("R1\0");
+                        //err_putc(' ');
+                        err_puthex(RTC_erfolg);
+                        //err_putc(' ');
+                        err_puthex(versuche);
+                        versuche++;
+                     }
+                     
+                     
+                     SchreibStatus=0;
+                     LeseStatus=0;
+
+
                      uhrstatus &= ~(1<<SYNC_READY);
                      uhrstatus |= (1<<SYNC_OK);
                      uhrstatus &= ~(1<<SYNC_NEW);                 // TWI soll jetzt Daten senden
 
-                     //uint8_t DCF77_erfolg = UhrAbrufen();
-                     
-                     
-                     /*
-                      DCF77daten[1] = 12; // stunde
-                      DCF77daten[0] = 17; // minute
-                      
-                      res=rtc_write_Zeit(DCF77daten[1], DCF77daten[0],0); // stunde, minute, sekunde
-                      
-                      
-                      
-                      DCF77daten[2] = 13; // TagDesMonats
-                      DCF77daten[3] = 10; // Monat
-                      DCF77daten[4] = 15; // Jahr
-                      DCF77daten[5] = 1; // Wochentag
- 
-                      res=rtc_write_Datum(DCF77daten[5], DCF77daten[2], DCF77daten[3],DCF77daten[4]);//wochentag (1 = Montag), tagdesmonats, monat, jahr (2-stellig)
-
-                      
-                      */
-                     err_gotoxy(0,0);
-                     err_putint2(DCF77daten[1]);
-                     err_putc(':');
-                     err_putint2(DCF77daten[0]);
-                     //err_putc(':');
-                     //err_putint1(DCF77daten[5]-1);
-                     
-                  }
+                   }
 						else
                   {
                      
@@ -2400,31 +2419,21 @@ wieder adressierbar.
                      
                      // Synchronisation
                      
-                     if (test)
-                     {
-                        uhrstatus |=  (1<<SYNC_OK);
-                        uhrstatus &= ~(1<<SYNC_WAIT);
-                        uhrstatus &= ~(1<<SYNC_NULL);
-                     }
                      
+                     //sync start
                      // alle 60 Min: Warten starten
                      if ((((min/30)&&(min%30==0)&&(std<23))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
                      {
-                        if (test)
-                        {
+                         {
+                           uhrstatus &= ~(1<<SYNC_OK);
+                           uhrstatus |= (1<<SYNC_WAIT); // Beginn Sync, Warten starten
+                           DCF77_counter=0; // Zaehler fuer korrekte Daten
                            
-                        }
-                        else
-                        {
-                        uhrstatus &= ~(1<<SYNC_OK);
-                        uhrstatus |= (1<<SYNC_WAIT); // Beginn Sync, Warten starten
-                        DCF77_counter=0; // Zaehler fuer korrekte Daten
-                        
-                        err_gotoxy(4,0);
-                        err_puts("            \0");
-                        
-                        lcd_gotoxy(0,1);
-                        lcd_puts("S     \0");
+                           err_gotoxy(4,0);
+                           err_puts("            \0");
+                           
+                           lcd_gotoxy(0,1);
+                           lcd_puts("S     \0");
                         }
                         
                      }
@@ -2477,10 +2486,6 @@ wieder adressierbar.
                                     
                                     DCF77_counter++;
                                     
-                                    if (test)
-                                    {
-                                       DCF77_counter = MIN_SYNC;
-                                    }
                                     
                                     
                                     
@@ -3702,6 +3707,7 @@ wieder adressierbar.
 										twi_Reply_count0++;
 									}
 									/*
+                            
 									 */
 									SchreibStatus &= ~(1<< WOZI);
 								}
