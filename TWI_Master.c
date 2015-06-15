@@ -687,13 +687,14 @@ void timer0 (void)
 	
 }
 
-ISR (TIMER0_OVF_vect)
+ISR (TIM0_OVF_vect)
 {
    testcounterL++;
    if (testcounterL ==0) // hochzaehlen
    {
       testcounterH++;
    }
+   
 }
 
 #pragma mark TIMER2
@@ -2582,6 +2583,19 @@ int main (void)
                      // Ende Synchronisation
                   } // if NOT test
 						
+                  
+                  outbuffer[46] = RTCdaten[1];
+                  outbuffer[47] = RTCdaten[0];
+                  outbuffer[45] = RTCdaten[5];
+                  
+                  outbuffer[40] = RTCdaten[2]; // tagdesmonats
+                  
+                  outbuffer[41] = RTCdaten[3] & 0x0F; //  monat
+                  
+                  uint8_t jahrab2010 = RTCdaten[4]  -10; // Jahr ab 2010
+                  jahrab2010 <<=4; // bit
+                  outbuffer[41] |= jahrab2010  ;
+
                   // ++++++++++++++++++++++++++++++++
                   // End NOT TEST
                   // ++++++++++++++++++++++++++++++++						
@@ -2599,6 +2613,10 @@ int main (void)
 							SchreibStatus=0; 
 							LeseStatus=0;
 						}
+                  
+                  outbuffer[43] = LeseStatus;
+                  outbuffer[44] = SchreibStatus;
+
 						
 						err_clr_line(1);
 						err_gotoxy(12,1);
@@ -2656,7 +2674,7 @@ int main (void)
 								uint8_t i=0;
 								for (i=0 ; i<SPI_BUFSIZE; i++) 
 								{
-									outbuffer[i]=0;
+									//outbuffer[i]=0;
 								}
 								//err_gotoxy(15,0);
 								//err_putc('U');
@@ -3432,6 +3450,7 @@ int main (void)
 										}//switch
 										
 										// BueroTXdaten Test
+                              /*
 										if (Zeit.minute&2) // Minuten ungerade
 										{
 											BueroTXdaten[0] |= (1<<0); // Bit 0 setzen
@@ -3440,7 +3459,7 @@ int main (void)
 										{
 											BueroTXdaten[0] &= ~(1<<0); // Bit 0 reseten
 										}
-										
+										*/
 										//
 										
 										//err_putint1(BueroTXdaten[0]);
@@ -4392,7 +4411,7 @@ int main (void)
                         
                         for (int i=0;i<8;i++)
                         {
-                           outbuffer[i+36]= EEPROMTXdaten[i];
+                           //outbuffer[i+36]= EEPROMTXdaten[i];
                         }
 
 								//	Warten auf nŠchsten Timerevent
