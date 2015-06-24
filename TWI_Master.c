@@ -1957,6 +1957,8 @@ int main (void)
 				//lcd_puthex(BUS_Status);
 				lcd_puthex(in_startdaten);
 				//delay_ms(100);
+            outbuffer[42] = in_startdaten;
+            
 				switch (in_startdaten) // Daten vom Webserver, liegen am Anfang der Schleife bereit 
 				{
 					case NULLTASK: // B0
@@ -2852,7 +2854,7 @@ int main (void)
 										//Echo = HeizungStundencode;
 										
 										HeizungStundencode &= 0x03; // Bit 0 und 1 filtern
-										outbuffer[27] = HeizungStundencode;
+										//outbuffer[27] = HeizungStundencode;
 										
 										
 										//err_puts(" c\0");
@@ -3193,7 +3195,7 @@ int main (void)
 									outbuffer[7] = 0x00;	// offen
 									
 									//	outbuffer[29] = Echo;// 7.4.11 auskomm.
-									outbuffer[23] |= Zeit.minute & 0x3F;				// Bits 0-5: Minute, 6 bit
+									//outbuffer[23] |= Zeit.minute & 0x3F;				// Bits 0-5: Minute, 6 bit
 									RinneStundencode=0;
 									LeseStatus &= ~(1<< HEIZUNG);// Flag zuruecksetzen
 									Read_Device &= ~(1<< HEIZUNG);// Flag zuruecksetzen
@@ -3214,7 +3216,14 @@ int main (void)
 									delay_ms(2);
 									//						err_gotoxy(4,1);
 									//						err_puts("W\0");
-									
+                           /*
+                            Status byte 18
+                            bit 0:   Lampe
+                            bit 1:   Ofen
+                            
+                            
+                            */
+                           uint8_t werkstattstatus=0;
 									uint8_t Werkstatttagblock[buffer_size];
 									uint8_t Stundencode=0;
 									txbuffer[0]=0;
@@ -3238,6 +3247,7 @@ int main (void)
 												if (Stundencode >=2)	//	Werte 2, 3: Lampe FULL Wert 0: Lampe OFF
 												{
 													txbuffer[0] |= (1<< 0); // Bit 0 setzen
+                                       werkstattstatus |= (1<< 0);
 												}
 												else
 												{
@@ -3251,6 +3261,7 @@ int main (void)
 												if ((Stundencode ==1)||(Stundencode==3))//Werte 1, 3: Brenner auf FULL Wert 0: Lampe OFF
 												{
 													txbuffer[0] |= (1<< 0); // Bit 0 setzen
+                                       werkstattstatus |= (1<< 0);
 												}
 												else
 												{
@@ -3277,16 +3288,17 @@ int main (void)
 										int OfenStundencode=Tagplanwert(Werkstatttagblock, Zeit.stunde);
                               OfenStundencode &= 0x03;	// Bit 0 und 1 filtern fuer TXdaten[1]
                               
-                              /*
+                              
                               if (OfenStundencode) // Stundenwert ist >0, Ofen ein
                               {
-                                 txbuffer[0] |= (1<< 1); // Bit 1 setzen
+                                 //txbuffer[0] |= (1<< 1); // Bit 1 setzen
+                                 werkstattstatus |= (1<< 1);
                               }
                               else
                               {
-                                 txbuffer[0] &= ~(1<< 1); // Bit 1 zuruecksetzen
+                                // txbuffer[0] &= ~(1<< 1); // Bit 1 zuruecksetzen
                               }
-                               */
+                              
                               txbuffer[1]= OfenStundencode;
 									}//erfolg
 									else
@@ -3347,7 +3359,7 @@ int main (void)
                            {
                               
                            }
-
+                           outbuffer[18] = werkstattstatus;
                            
                            
                         SchreibStatus &= ~(1<< WERKSTATT);
@@ -3379,6 +3391,7 @@ int main (void)
 										if (WerkstattRXdaten[3] & (1<<TIEFKUEHLALARM))
 										{
 											outbuffer[31] |= (1<<TIEFKUEHLALARM); // Alarmbit setzen
+                                 
 										}
 										else 
 										{
@@ -3410,6 +3423,15 @@ int main (void)
 								
 								if (SchreibStatus & (1<< BUERO))	//schreiben an Buero
 								{
+                           /*
+                            Status byte 22
+                            bit 0:   Lampe
+                            bit 1:   Ofen
+                            
+                            
+                            */
+
+                           uint8_t buerostatus=0;
 									delay_ms(2);
 									//err_gotoxy(8,1);
 									//err_puts("B\0");
@@ -3441,14 +3463,19 @@ int main (void)
 											{
 												BueroTXdaten[0] = (Stundencode >=2); //Werte 2, 3: ON Wert 0: OFF
 												
-											}break;
+											
+                                 }break;
 												
 											case 1: // zweite halbe Stunde
 											{
 												BueroTXdaten[0] = ((Stundencode ==1)||(Stundencode==3)); //Werte 1, 3: ON Wert 0: OFF
 											}break;
 										}//switch
-										
+										if (BueroTXdaten[0])
+                              {
+                                 buerostatus |= (1<<0);
+                              }
+                              
 										// BueroTXdaten Test
                               /*
 										if (Zeit.minute&2) // Minuten ungerade
@@ -3562,6 +3589,7 @@ int main (void)
 									SchreibStatus &= ~(1<< BUERO);
 									delay_ms(100);
 									PORTC &= ~(1<<TWICOUNTPIN);
+                           outbuffer[22] = buerostatus;
 								}	
 								
 								if (LeseStatus & (1<< BUERO))	//lesen von Buero
@@ -3624,6 +3652,8 @@ int main (void)
 									//				err_puthex(BueroRXdaten[3]);
 									//delay_ms(400);
 									//err_puthex(LeseStatus);
+                           
+                           outbuffer[23] = BueroRXdaten[1]; // Temp
 									LeseStatus &= ~(1<< BUERO);
 									delay_ms(100);
 									PORTC &= ~(1<<TWICOUNTPIN);
@@ -3641,6 +3671,7 @@ int main (void)
 									//						err_puts("W\0");
 									
 									//delay_ms(2);
+                           uint8_t wozistatus=0;
 									uint8_t WoziTagblock[buffer_size];
 									uint8_t Stundencode=0;
 									WoZiTXdaten[0]=0;
@@ -3670,8 +3701,11 @@ int main (void)
 												WoZiTXdaten[0]=((Stundencode ==1)||(Stundencode==3)); //Werte 1, 3: Brenner auf FULL Wert 0: Brenner RED/OFF
 											}break;
 										}//switch
-										
-										outbuffer[29] |=WoZiTXdaten[0];
+										if (WoZiTXdaten[0])
+                              {
+                                 wozistatus |= (1<<0);
+                              }
+										//outbuffer[29] |=WoZiTXdaten[0];
 										// Test
 										//				WoZiTXdaten[0]=Zeit.minute%2;
 										//
@@ -3708,10 +3742,15 @@ int main (void)
 										EEPROM_Err |= (1<<WOZI);
                               spistatus |= (1<<TWI_ERR_BIT);
 									}
-									
+                           if (WoZiTXdaten[1])
+                           {
+                              wozistatus |= (1<<1);
+                           }
+
 									//end Schreiben Objekt 1
 									
 									uint8_t wozierfolg=0;
+                           
 									wozierfolg=SlavedatenSchreiben(WOZI_ADRESSE,  WoZiTXdaten);
 									
 									wdt_reset();
@@ -3729,14 +3768,17 @@ int main (void)
                             
 									 */
 									SchreibStatus &= ~(1<< WOZI);
+                           outbuffer[20] = wozistatus;
 								}
+                        
+                        // Lesen von Wozi
 								
 								if (LeseStatus & (1<< WOZI))	//lesen von Wozi
 								{
 									delay_ms(2);
 									wdt_reset();
 									twi_Call_count0++;
-									uint8_t wozierfolg=SlavedatenLesen(WOZI_ADRESSE, WoZiRXdaten);
+									uint8_t wozierfolg=SlavedatenLesen(WOZI_ADRESSE, (void*)WoZiRXdaten);
 									wdt_reset();
 									if (wozierfolg)
 									{
@@ -3768,7 +3810,8 @@ int main (void)
 												
 										}//switch pos
 										//		WebTxDaten[7]= WoZiRXdaten[1];	// Innentemperatur
-										outbuffer[7]= WoZiRXdaten[1];		// Innentemperatur
+										outbuffer[21]= WoZiRXdaten[1];
+                              outbuffer[7]= WoZiRXdaten[1];// Innentemperatur
 									}
 									
 									LeseStatus &= ~(1<< WOZI);
@@ -3784,6 +3827,7 @@ int main (void)
 									//						err_puts("L\0");
 									delay_ms(2);
 									//delay_ms(2);
+                           uint8_t laborstatus=0;
 									uint8_t LaborTagblock[buffer_size];
 									uint8_t Stundencode=0;
 									LaborTXdaten[0]=0;
@@ -3830,6 +3874,11 @@ int main (void)
                               spistatus |= (1<<TWI_ERR_BIT);
 									}
                            
+                           if (LaborTXdaten[0])
+                           {
+                              laborstatus |= (1<<0);
+                           }
+
 									// Radiator lesen
                            LaborTXdaten[1]=0;
 									wdt_reset();
@@ -3847,25 +3896,20 @@ int main (void)
 										EEPROM_Err |= (1<<LABOR);
                               spistatus |= (1<<TWI_ERR_BIT);
 									}
-									
+                           if (LaborTXdaten[1])
+                           {
+                              laborstatus |= (1<<1);
+                           }
+								
 									// end Radiator lesen
 									
-
-									
-									
-									/*
-									 for (i=1;i<8;i++) //txbuffer[0] ist Plan
-									 {
-									 txbuffer[i]=LaborTXdaten[i];
-									 }
-									 */
 									uint8_t laborerfolg=0;
 									
 									//err_clr_part(0,0,10);
 									//err_puts("LB wr\0");
 									wdt_reset();
 									twi_Call_count0++;
-									laborerfolg=SlavedatenSchreiben(LABOR_ADRESSE,  LaborTXdaten);
+									laborerfolg=SlavedatenSchreiben(LABOR_ADRESSE,  (void*)LaborTXdaten);
 									wdt_reset();
 									LaborTXdaten[4]=45;
 									if (laborerfolg)
