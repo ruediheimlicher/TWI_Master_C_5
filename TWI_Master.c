@@ -1706,9 +1706,9 @@ int main (void)
 				
 				// Uebertragung pruefen
 				
-				lcd_gotoxy(6,0);
-				lcd_puts("bc:\0");
-				lcd_puthex(ByteCounter);
+				//lcd_gotoxy(6,0);
+				//lcd_puts("bc:\0");
+				//lcd_puthex(ByteCounter);
             
             err_gotoxy(0,0);
 				err_puts("      \0");
@@ -3590,9 +3590,13 @@ int main (void)
 									delay_ms(100);
 									PORTC &= ~(1<<TWICOUNTPIN);
                            outbuffer[22] = buerostatus;
-								}	
-								
-								if (LeseStatus & (1<< BUERO))	//lesen von Buero
+								}
+                        
+                        
+								//lesen von Buero
+                        
+                        
+								if (LeseStatus & (1<< BUERO))
 								{
 									delay_ms(2);
 									err_gotoxy(8,1);
@@ -3654,6 +3658,10 @@ int main (void)
 									//err_puthex(LeseStatus);
                            
                            outbuffer[23] = BueroRXdaten[1]; // Temp
+                           
+                           
+                           lcd_gotoxy(10,0);
+                           lcd_puthex(BueroRXdaten[7]);
 									LeseStatus &= ~(1<< BUERO);
 									delay_ms(100);
 									PORTC &= ~(1<<TWICOUNTPIN);
@@ -4305,8 +4313,12 @@ int main (void)
 									
 									SchreibStatus &= ~(1<< ESTRICH);
 								}
-								
-								if (LeseStatus & (1<< ESTRICH))	//lesen von Estrich
+                        
+                        
+								//lesen von Estrich
+                        
+                        
+								if (LeseStatus & (1<< ESTRICH))
 								{
 									
 									delay_ms(2);
@@ -4364,7 +4376,11 @@ int main (void)
 										//		outbuffer[i]=EstrichRXdaten[i];			// Fuer Test: Daten ab Byte 0 von outbuffer
 										outbuffer[estrich +i]=EstrichRXdaten[i]; // Daten ab Byte 'estrich' von outbuffer Byte 9
 									}
-									
+                           lcd_gotoxy(0,3);
+                           lcd_putc('E');
+                           lcd_puthex(EstrichRXdaten[5]);
+                           lcd_puthex(EstrichRXdaten[6]);
+                           lcd_puthex(EstrichRXdaten[7]);
 									
 									LeseStatus &= ~(1<< ESTRICH); // erledigt
 								}
