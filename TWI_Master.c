@@ -1098,9 +1098,9 @@ uint8_t RTC_Abrufen (void)
     }
     uint8_t stunde=((data & 0xF0)>>4)*10 + (data & 0x0F);;
     */
-	uint8_t sekunde;
-	uint8_t minute;
-	uint8_t stunde;
+	uint8_t sekunde=0;
+	uint8_t minute=0;
+	uint8_t stunde=0;
 	
 	
 	
@@ -2489,10 +2489,7 @@ int main (void)
                                     
                                     DCF77_counter++;
                                     
-                                    
-                                    
-                                    
-                                    
+                                     
                                     lcd_putint1(DCF77_counter);
                                     oldmin=DCF77daten[0];
                                     if (DCF77_counter >= MIN_SYNC) // genuegende Anzahl korrekte Daten
@@ -2586,9 +2583,9 @@ int main (void)
                   } // if NOT test
 						
                   
-                  outbuffer[46] = RTCdaten[1];
-                  outbuffer[47] = RTCdaten[0];
-                  outbuffer[45] = RTCdaten[5];
+                  outbuffer[46] = RTCdaten[1]; // stunde
+                  outbuffer[47] = RTCdaten[0]; // minute
+                  outbuffer[45] = RTCdaten[5]; // wochentag
                   
                   outbuffer[40] = RTCdaten[2]; // tagdesmonats
                   
@@ -2920,7 +2917,7 @@ int main (void)
 									{
 										Stundencode1=Tagplanwert(tagblock1, Zeit.stunde);
 										
-										//				outbuffer[27] = Stundencode1; // audkomm 9.4.11
+										//				outbuffer[27] = Stundencode1; // auskomm 9.4.11
 										//Simulation
 										
 										//Stundencode1=Zeit.minute % 5;
@@ -3191,7 +3188,7 @@ int main (void)
 									outbuffer[5] |= HeizungStundencode;				// Bit 4, 5 gefiltert aus Tagplanwert von Brenner und Mode
 									outbuffer[5] |= RinneStundencode;				// Bit 6, 7 gefiltert aus Tagplanwert von Rinne
 									
-									//outbuffer[6] = 0x00;                       // eventuell err von RTC
+									outbuffer[6] = 0x00;                       // eventuell err von RTC
 									outbuffer[7] = 0x00;	// offen
 									
 									//	outbuffer[29] = Echo;// 7.4.11 auskomm.
