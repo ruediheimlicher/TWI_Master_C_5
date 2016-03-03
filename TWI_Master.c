@@ -2994,6 +2994,8 @@ int main (void)
 										
 										//err_putc(' ');
 										//err_puthex(RinneStundencode);
+                              
+                              // Code fuer Rinne an Heizung schicken
 										if (RinneStundencode)
 										{
 											txbuffer[2] = 0x01;
@@ -3068,6 +3070,7 @@ int main (void)
 									wdt_reset();
 									twi_Call_count0++;
 									
+                           // txbuffer an Zeizung schicken
                            erfolg=SlaveSchreiben(HEIZUNG_ADRESSE);
 									
                            //OSZIAHI;
@@ -3119,7 +3122,7 @@ int main (void)
 									
 									
 									//err_putint1(adcerfolg);
-									if (Heizungerfolg)
+									if (Heizungerfolg) // Fehler
 									{
 										Read_Err |= (1<<HEIZUNG);
 										spistatus |= (1<<TWI_ERR_BIT);
