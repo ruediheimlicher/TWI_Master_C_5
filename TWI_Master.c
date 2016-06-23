@@ -2698,7 +2698,7 @@ int main (void)
 								 lcd_gotoxy(17,0);
 								 lcd_putint2(min);
 								 */								
-								uint8_t StundenCode=0;
+                        //uint8_t StundenCode=0;
 								
 								//	Brennerlaufzeit addieren
 								if ((min > Zeit.minute) || ((min ==0)&&(std==0)) || (std> Zeit.stunde) ) //neue Minute oder neue Stunde oder neuer Tag
@@ -2792,7 +2792,7 @@ int main (void)
 								//	*	Heizung
 								//	*************
 								OSZIAHI;
-								delay_ms(2);
+								delay_ms(1);
 								OSZIALO;
 								uint8_t HeizungStundencode=0;
 								uint8_t RinneStundencode=0;
@@ -2819,7 +2819,13 @@ int main (void)
 									wdt_reset();
 									
 									// code fuer Objekt 0 aus EEPROM lesen, 8 bytes
-									
+									// EEPROM_WOCHENPLAN_ADRESSE: A0
+                           // HEIZUNG: 0
+                           // Objekt: 0
+                           // Tag:Zeit.wochentag
+                           // xyz > uint_t16 code = Raum*100 + objekt*10 + Tag
+
+                           
 									uint8_t erfolg=WochentagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock, HEIZUNG, 0, Zeit.wochentag);
 									//OSZIAHI;
 									delay_ms(1);
@@ -3017,7 +3023,7 @@ int main (void)
                            
                            /*
                             Byte 6 lesen
-                            Kann code enthalten, der das Verhalten des Slavesteuert.
+                            Kann code enthalten, der das Verhalten des Slave steuert.
                             PWM_CODEBIT gesetzt:
                             Es folgt ein TWI-Paket mit den Positionsdaten fuer den PWM
                             Diese werden in den Array Servoposition geladen
