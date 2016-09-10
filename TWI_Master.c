@@ -185,6 +185,8 @@ static char SolarString[48];
 
 // defines fuer BUS-Status
 #define SPI_SENDBIT				0
+
+
 #define TWI_CONTROLBIT			1				// Statusbit fuer TWI
 #define WEB_CONTROLBIT			2				// Statusbit fuer Web
 
@@ -255,6 +257,16 @@ void get_mcusr(void) \
      MCUSR = 0; 
     wdt_disable(); 
     } 
+
+/* ***** EEPROM-Stuff ********************************* */
+uint8_t EEMEM ip0;
+uint8_t EEMEM ip1;
+uint8_t EEMEM ip2;
+uint8_t EEMEM ip3;
+uint8_t EEMEM ipstring[10];
+
+/* ************************************** */
+
 
 /* ************************************** */
 
@@ -687,7 +699,7 @@ void timer0 (void)
 	
 }
 
-ISR (TIM0_OVF_vect)
+ISR(TIMER0_OVF_vect)
 {
    testcounterL++;
    if (testcounterL ==0) // hochzaehlen
@@ -1660,7 +1672,7 @@ int main (void)
 		//err_putc('-');
 		
 		// ***********************
-		if (SPI_CONTROL_PORTPIN & (1<< SPI_CONTROL_CS_HC)) // SPI ist Passiv
+		if (SPI_CONTROL_PORTPIN & (1<< SPI_CONTROL_CS_HC)) // CS ist HI, SPI ist Passiv, 
 		{
 			// ***********************
 			/*
@@ -1858,9 +1870,9 @@ int main (void)
 		// letzte Daten vom Webserver sind in inbuffer und in in_startdaten, in_lbdaten, in_hbdaten
 		
 				
-		else						// (IS_CS_HC_ACTIVE) 
+		else						// CS ist LO (IS_CS_HC_ACTIVE)
 		{
-			if (!(spistatus & (1<<ACTIVE_BIT))) // CS ist neu aktiv geworden, Active-Bit 0 ist noch nicht gesetzt
+			if (!(spistatus & (1<<ACTIVE_BIT))) // CS ist neu aktiv (LO) geworden, Active-Bit 0 ist noch nicht gesetzt
 			{
 				// Aufnahme der Daten vom Webserver vorbereiten
 				uint8_t j=0;
@@ -2157,10 +2169,6 @@ int main (void)
 						lbyte=in_lbdaten;
 						hbyte=in_hbdaten;
 						
-                  // Kontrollausgabe
-                  outbuffer[33] = 0x3A;
-                  outbuffer[34] = lbyte;
-                  outbuffer[35] = hbyte;
                   
 						uint8_t i=0;
 						for(i=0;i<8;i++)
@@ -3229,7 +3237,7 @@ int main (void)
                             
                             
                             */
-                           uint8_t werkstattstatus=0;
+                           uint8_t werkstattrxstatus=0; // Status aus EEPROM
 									uint8_t Werkstatttagblock[buffer_size];
 									uint8_t Stundencode=0;
 									txbuffer[0]=0;
@@ -3253,7 +3261,7 @@ int main (void)
 												if (Stundencode >=2)	//	Werte 2, 3: Lampe FULL Wert 0: Lampe OFF
 												{
 													txbuffer[0] |= (1<< 0); // Bit 0 setzen
-                                       werkstattstatus |= (1<< 0);
+                                       werkstattrxstatus |= (1<< 0);
 												}
 												else
 												{
@@ -3267,7 +3275,7 @@ int main (void)
 												if ((Stundencode ==1)||(Stundencode==3))//Werte 1, 3: Brenner auf FULL Wert 0: Lampe OFF
 												{
 													txbuffer[0] |= (1<< 0); // Bit 0 setzen
-                                       werkstattstatus |= (1<< 0);
+                                       werkstattrxstatus |= (1<< 0);
 												}
 												else
 												{
@@ -3298,7 +3306,7 @@ int main (void)
                               if (OfenStundencode) // Stundenwert ist >0, Ofen ein
                               {
                                  //txbuffer[0] |= (1<< 1); // Bit 1 setzen
-                                 werkstattstatus |= (1<< 1);
+                                 werkstattrxstatus |= (1<< 1);
                               }
                               else
                               {
@@ -3342,7 +3350,7 @@ int main (void)
                             */
  									uint8_t tagblock3[buffer_size];
                            // EEPROM_WOCHENPLAN_ADRESSE, tagblock, raum, objekt, Wochentag
-									uint8_t obj3erfolg=WochentagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock3, HEIZUNG, 3, 0);
+									uint8_t obj3erfolg=WochentagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock3, WERKSTATT, 3, 0);
 									//OSZIAHI;
 									delay_ms(1);
                            
@@ -3365,7 +3373,6 @@ int main (void)
                            {
                               
                            }
-                           outbuffer[18] = werkstattstatus;
                            
                            
                         SchreibStatus &= ~(1<< WERKSTATT);
@@ -3382,7 +3389,7 @@ int main (void)
 									uint8_t werkstatterfolg=SlavedatenLesen(WERKSTATT_ADRESSE,WerkstattRXdaten);
 									wdt_reset();
 									
-									err_puthex(WerkstattRXdaten[3]);
+									
 									
 									if (werkstatterfolg)
 									{
@@ -3394,6 +3401,10 @@ int main (void)
 									else
 									{
 										twi_Reply_count0++;
+                              uint8_t werkstatttxstatus=WerkstattRXdaten[STATUS]; // Status aus Werkstatt, weiterleiten an Webserver
+                              err_puthex(werkstatttxstatus);
+                              //uint8_t werkstatttemperatur =
+                              
 										if (WerkstattRXdaten[3] & (1<<TIEFKUEHLALARM))
 										{
 											outbuffer[31] |= (1<<TIEFKUEHLALARM); // Alarmbit setzen
@@ -3412,10 +3423,41 @@ int main (void)
 										{
 											outbuffer[31] &= ~(1<<WASSERALARMKELLER); // Alarmbit zuruecksetzen
 										}
+                              
+                              // temperatur
+                              uint8_t wstemperatur = WerkstattRXdaten[INNEN];
+                               outbuffer[19] = WerkstattRXdaten[INNEN];
+                              //lcd_gotoxy(0,3);
+                              //lcd_putint(wstemperatur);
+#pragma mark Strom
+                              // Strom lesen
+                              /*
+                               #define STROMHH      4 // Bytes fuer Stromdaten
+                               #define STROMH       5
+                               #define STROML       6
+                               */
+                              // Status
+                              outbuffer[18] = WerkstattRXdaten[STATUS];
+                              // Stromdaten
+                              outbuffer[33] = WerkstattRXdaten[STROMHH];
+                              outbuffer[34] = WerkstattRXdaten[STROMH];;
+                              outbuffer[35] = WerkstattRXdaten[STROML];;
+                              lcd_gotoxy(0,3);
+                              //lcd_putc('t');
+                              //lcd_putint(wstemperatur);
+                              //lcd_putc(' ');
+                              
+                              //lcd_putc('s');
+                              lcd_putint(WerkstattRXdaten[STATUS]);
+                              lcd_putc('*');
+                              lcd_putint(WerkstattRXdaten[STROMHH]);
+                              lcd_putc(' ');
+                              lcd_putint(WerkstattRXdaten[STROMH]);
+                              lcd_putc(' ');
+                              lcd_putint(WerkstattRXdaten[STROML]);
+                              
 										
-										
-										
-									}
+									} // lesen ok
 									
 									
 									
@@ -4382,11 +4424,11 @@ int main (void)
 										//		outbuffer[i]=EstrichRXdaten[i];			// Fuer Test: Daten ab Byte 0 von outbuffer
 										outbuffer[estrich +i]=EstrichRXdaten[i]; // Daten ab Byte 'estrich' von outbuffer Byte 9
 									}
-                           lcd_gotoxy(0,3);
-                           lcd_putc('E');
-                           lcd_puthex(EstrichRXdaten[5]);
-                           lcd_puthex(EstrichRXdaten[6]);
-                           lcd_puthex(EstrichRXdaten[7]);
+                           //lcd_gotoxy(0,3);
+                           //lcd_putc('E');
+                           //lcd_puthex(EstrichRXdaten[5]);
+                           //lcd_puthex(EstrichRXdaten[6]);
+                           //lcd_puthex(EstrichRXdaten[7]);
 									
 									LeseStatus &= ~(1<< ESTRICH); // erledigt
 								}

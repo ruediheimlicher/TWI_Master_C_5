@@ -4,6 +4,7 @@
 # include "Funktionen.h"
 #include <stdlib.h>
 #include <avr/wdt.h>
+#include <avr/eeprom.h>
 
 #define LOOPLEDPINPORT			PORTC
 #define LOOPLEDPIN				2	// Ausgang fuer LOOPLEDPIN
@@ -79,6 +80,17 @@
 #define A3	0xA3
 #define A4	0xA4
 #define A5	0xA5
+
+#define INNEN			0	// Bit fuer Innentemperatur
+
+// TWI
+#define STATUS			3	// Byte fuer Status
+
+// Strom
+#define STROMHH      4 // Bytes fuer Stromdaten
+#define STROMH       5
+#define STROML       6
+
 
 
 

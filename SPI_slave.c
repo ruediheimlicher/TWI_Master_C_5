@@ -122,7 +122,7 @@ static volatile uint8_t						startbitpos=0;
 
 
 // Makros:
-#define IS_CS_HC_ACTIVE			SPI_CONTROL_PORTPIN & ~(1<< SPI_CONTROL_CS_HC)	// ist CS fuer HC  LO?
+#define IS_CS_HC_ACTIVE			SPI_CONTROL_PORTPIN & ~(1<<SPI_CONTROL_CS_HC)	// ist CS fuer HC  LO?
 
 
 
