@@ -241,7 +241,7 @@ void InitSPI_Slave(void)
 
 
 // Interrupt Routine Slave Mode (interrupt controlled)
-// Aufgerufen bei fallender Flanke an INT0
+// Aufgerufen bei fallender Flanke an INT0, gesetzt von webserver
 
 ISR( INT0_vect )
 {
