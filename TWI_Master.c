@@ -2371,7 +2371,6 @@ int main (void)
 #pragma mark Uhr
                      //TWBR=48;
                      if (!(uhrstatus & (1<<SYNC_NULL)))     // Nach reset, rtc noch nicht abfragen
-                     
                      {
                         uint8_t versuche=0;
                         uint8_t RTC_erfolg=1;
@@ -2434,10 +2433,14 @@ int main (void)
                      
                      //sync start
                      // alle 60 Min: Warten starten
-                     if ((((min/30)&&(min%30==0)&&(std<23))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
+//                     if ((((min/30)&&(min%30==0)&&(std<23))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
+                     if ((((min/30)&&(min%30==0)&&(std==13))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
                      {
+                        lcd_gotoxy(10,0);
+                        lcd_puts("       ");
                         {
                            uhrstatus &= ~(1<<SYNC_OK);
+                        
                            uhrstatus |= (1<<SYNC_WAIT); // Beginn Sync, Warten starten
                            DCF77_counter=0; // Zaehler fuer korrekte Daten
                            
@@ -2446,6 +2449,9 @@ int main (void)
                            
                            lcd_gotoxy(0,1);
                            lcd_puts("S     \0");
+                           
+                           lcd_gotoxy(10,1);
+                           lcd_puts("WAIT  ");
                         }
                      }
                      
@@ -2457,14 +2463,23 @@ int main (void)
                         if (DCF77_erfolg) // Fehler
                         {
                            lcd_gotoxy(16, 1);
-                           err_puts("DCF\0");
-                           err_putc('!');
+                           lcd_puts("DCF\0");
+                           lcd_putc('!');
                            DCF77_counter=0; // zurueck auf Feld 1. Uhr hat einen Fehler, Synchronisation neu starten
-                        }
-                        else // Wert ist OK
+                           DCF77_errcounter++;
+                           lcd_gotoxy(10,0);
+                           lcd_putc('e');
+                           lcd_putc('1');
+                           lcd_putc(' ');
+
+                           lcd_putint(DCF77_errcounter);
+                           
+                         }
+                        else // Wert ist OK, Uhr ist ok
                         {
                            lcd_gotoxy(16, 1);
                            lcd_putc('+');
+                           
                            lcd_putint2(DCF77daten[0]);         // Minuten
                            // erste Synchronisation?
                            if (uhrstatus & (1<<SYNC_NULL))     // Nach reset, noch keine oldmin ...
@@ -2473,8 +2488,14 @@ int main (void)
                               oldmin=DCF77daten[0];
                               oldstd=DCF77daten[1];
                               oldtag=DCF77daten[2];
+                              //oldmin=0;
+                              //oldstd=8;
+                              //oldtag=0;
+                              
+                              
                               uhrstatus &= ~(1<<SYNC_NULL);
                               uhrstatus |= (1<<SYNC_NEW);         // TWI soll noch keine Daten uebertragen
+                           
                            }
                            else if (!(oldmin == DCF77daten[0]))   // minute hat sich geaendert
                            {
@@ -2499,6 +2520,9 @@ int main (void)
                                     
                                     
                                     lcd_putint1(DCF77_counter);
+                                    lcd_gotoxy(10,1);
+                                    lcd_puts("SYNC A ");
+                                    
                                     oldmin=DCF77daten[0];
                                     if (DCF77_counter >= MIN_SYNC) // genuegende Anzahl korrekte Daten
                                     {
@@ -2508,16 +2532,25 @@ int main (void)
                                        DCF77_counter =0;
                                        uhrstatus |= (1<<SYNC_READY); // Synchronisation ausloesen
                                        uhrstatus &= ~(1<<SYNC_WAIT); // WAIT zuruecksetzen
+                                       lcd_gotoxy(10,1);
+                                       lcd_puts("SYNC OK");
+                                       
                                     }
                                  }
                                  else // fehler
                                  {
                                     DCF77_counter =0;                // Counter zuruecksetzen
                                     DCF77_errcounter++;              // Fehler aufsummieren
-                                    
+                                    lcd_gotoxy(10,0);
+                                    lcd_putc('e');
+                                    lcd_putc('2');
+                                    lcd_putc(' ');
+                                    lcd_putint(DCF77_errcounter);
+
                                     oldmin=DCF77daten[0];
                                     oldstd=DCF77daten[1];
                                     oldtag=DCF77daten[2];
+                                    
                                     
                                  }
                                  
@@ -2525,16 +2558,37 @@ int main (void)
                               else // fehler
                               {
                                  DCF77_counter =0;
+                                 
                                  oldmin=DCF77daten[0];
                                  oldstd=DCF77daten[1];
                                  oldtag=DCF77daten[2];
                                  
+                                 // blockieren bei Sync-Fehler vermeiden
+                                 uhrstatus |= (1<<SYNC_READY);
+                                 uhrstatus &= ~(1<<SYNC_WAIT);
+                                 
+                                 uhrstatus &= ~(1<<SYNC_READY);
+                                 uhrstatus |= (1<<SYNC_OK);
+                                 uhrstatus &= ~(1<<SYNC_NEW);
+                                 
+                                 lcd_gotoxy(1,1);
+                                 lcd_putc('!');
+                                 //lcd_putint(DCF77_errcounter);
+                                 lcd_putc('!');
+                                 lcd_gotoxy(10,0);
+                                 lcd_putc('e');
+                                 lcd_putc('3');
+                                 lcd_putc(' ');
+                                 lcd_putint(DCF77_errcounter);
+                                 lcd_gotoxy(10,1);
+                                 lcd_puts("JUMP ");
                                  
                               }
                            }
                         } // end DCF77erfolg=0
                         
                      } // end (uhrstatus & (1<<SYNC_WAIT)
+                     
                      
                      // TODO: Bei fehlgeschlagener Synchronisation Uhr unverŠndert lassen. Eventuell mit ODER SYNC_READY und SYNC_NEW und SYNC_OK
                      
@@ -2589,7 +2643,7 @@ int main (void)
                   } // if NOT test
                   
                   
-                  outbuffer[46] = RTCdaten[1]; // stunde
+                  outbuffer[46] = RTCdaten[1]; // stunde aus RTC
                   outbuffer[47] = RTCdaten[0]; // minute
                   outbuffer[45] = RTCdaten[5]; // wochentag
                   
@@ -3648,9 +3702,9 @@ int main (void)
                         if (LeseStatus & (1<< BUERO))
                         {
                            delay_ms(2);
-                           err_gotoxy(8,1);
-                           err_puts("B\0");
-                           err_puts("  \0");
+                           //err_gotoxy(8,1);
+                           //err_puts("B\0");
+                           //err_puts("  \0");
                            PORTC |= (1<<TWICOUNTPIN);
                            
                            //err_clr_line(1);
@@ -3709,8 +3763,8 @@ int main (void)
                            outbuffer[23] = BueroRXdaten[1]; // Temp
                            
                            
-                           lcd_gotoxy(10,0);
-                           lcd_puthex(BueroRXdaten[7]);
+                           //lcd_gotoxy(10,0);
+                           //lcd_puthex(BueroRXdaten[7]);
                            LeseStatus &= ~(1<< BUERO);
                            delay_ms(100);
                            PORTC &= ~(1<<TWICOUNTPIN);
