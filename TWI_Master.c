@@ -2431,7 +2431,7 @@ int main (void)
                            err_gotoxy(4,0);
                            err_puts("            \0");
                            
-                           lcd_gotoxy(0,1);
+                           lcd_clr_line(1);
                            lcd_puts("S     \0");
                         }
                         
@@ -3379,7 +3379,7 @@ int main (void)
 									uint8_t werkstatterfolg=SlavedatenLesen(WERKSTATT_ADRESSE,WerkstattRXdaten);
 									wdt_reset();
 									
-									//err_puthex(WerkstattRXdaten[3]);
+									err_puthex(WerkstattRXdaten[3]);
 									
 									if (werkstatterfolg)
 									{
@@ -3391,8 +3391,6 @@ int main (void)
 									else
 									{
 										twi_Reply_count0++;
-                              uint8_t werkstatttxstatus=WerkstattRXdaten[STATUS]; // Status aus Werkstatt, weiterleiten an Webserver
-
 										if (WerkstattRXdaten[3] & (1<<TIEFKUEHLALARM))
 										{
 											outbuffer[31] |= (1<<TIEFKUEHLALARM); // Alarmbit setzen
@@ -3411,41 +3409,10 @@ int main (void)
 										{
 											outbuffer[31] &= ~(1<<WASSERALARMKELLER); // Alarmbit zuruecksetzen
 										}
-									
-                              // temperatur
-                              uint8_t wstemperatur = WerkstattRXdaten[INNEN];
-                              outbuffer[19] = WerkstattRXdaten[INNEN];
-                              //lcd_gotoxy(0,3);
-                              //lcd_putint(wstemperatur);
-#pragma mark Strom
-                              // Strom lesen
-                              /*
-                               #define STROMHH      4 // Bytes fuer Stromdaten
-                               #define STROMH       5
-                               #define STROML       6
-                               */
-                              // Status
-                              outbuffer[18] = WerkstattRXdaten[STATUS];
-                              // Stromdaten
-                              outbuffer[33] = WerkstattRXdaten[STROMHH];
-                              outbuffer[34] = WerkstattRXdaten[STROMH];;
-                              outbuffer[35] = WerkstattRXdaten[STROML];;
-                              lcd_gotoxy(0,3);
-                              //lcd_putc('t');
-                              //lcd_putint(wstemperatur);
-                              //lcd_putc(' ');
-                              
-                              //lcd_putc('s');
-                              lcd_putint(WerkstattRXdaten[STATUS]);
-                              lcd_putc('*');
-                              lcd_putint(WerkstattRXdaten[STROMHH]);
-                              lcd_putc(' ');
-                              lcd_putint(WerkstattRXdaten[STROMH]);
-                              lcd_putc(' ');
-                              lcd_putint(WerkstattRXdaten[STROML]);
-                              
-
-                           }
+										
+										
+										
+									}
 									
 									
 									
