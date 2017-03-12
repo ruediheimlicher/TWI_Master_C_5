@@ -3410,7 +3410,7 @@ int main (void)
 											outbuffer[31] &= ~(1<<WASSERALARMKELLER); // Alarmbit zuruecksetzen
 										}
 										
-										
+										// Strom lesen
 										
 									}
 									
