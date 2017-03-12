@@ -65,6 +65,13 @@
 
 //#define data_buffer_size	8
 
+uint8_t EEMEM eesekunde;
+uint8_t EEMEM eeminute;
+uint8_t EEMEM eestunde;
+uint8_t EEMEM eetag;
+uint8_t EEMEM eewochentag;
+uint8_t EEMEM eemonat;
+uint8_t EEMEM eejahr;
 
 
 

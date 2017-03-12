@@ -2434,6 +2434,8 @@ int main (void)
                      //sync start
                      // alle 60 Min: Warten starten
 //                     if ((((min/30)&&(min%30==0)&&(std<23))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
+                     
+                     // Sync nur um 13 Uhr
                      if ((((min/30)&&(min%30==0)&&(std==13))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
                      {
                         lcd_gotoxy(10,0);
@@ -2533,7 +2535,8 @@ int main (void)
                                        uhrstatus |= (1<<SYNC_READY); // Synchronisation ausloesen
                                        uhrstatus &= ~(1<<SYNC_WAIT); // WAIT zuruecksetzen
                                        lcd_gotoxy(10,1);
-                                       lcd_puts("SYNC OK");
+                                       lcd_puts("SYNC +");
+                                       TWBR=72;
                                        
                                     }
                                  }
@@ -2555,7 +2558,7 @@ int main (void)
                                  }
                                  
                               } //if (oldstd==DCF77daten[1])&&(oldtag=DCF77daten[2])
-                              else // fehler
+                              else // fehler, vorherige Daten behalten
                               {
                                  DCF77_counter =0;
                                  
@@ -2573,15 +2576,19 @@ int main (void)
                                  
                                  lcd_gotoxy(1,1);
                                  lcd_putc('!');
-                                 //lcd_putint(DCF77_errcounter);
-                                 lcd_putc('!');
-                                 lcd_gotoxy(10,0);
-                                 lcd_putc('e');
-                                 lcd_putc('3');
-                                 lcd_putc(' ');
                                  lcd_putint(DCF77_errcounter);
+                                 lcd_putc('!');
+                                 lcd_gotoxy(8,1);
+                                 //lcd_putc('e');
+                                 //lcd_putc('3');
+                                 //lcd_putc(' ');
+                                 //lcd_putint(DCF77_errcounter);
+                                 lcd_putint2(oldtag);
+                                 lcd_putint2(oldstd);
+                                 lcd_putint2(oldmin);
                                  lcd_gotoxy(10,1);
                                  lcd_puts("JUMP ");
+                                 
                                  
                               }
                            }

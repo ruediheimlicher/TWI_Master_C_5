@@ -86,7 +86,8 @@ void i2c_init(void)
 	//lcd_gotoxy(0,3);
    //lcd_puthex(TWBR);
    
-   TWBR=64;
+   TWBR=56;
+    TWBR=32;
 }/* i2c_init */
 
 
