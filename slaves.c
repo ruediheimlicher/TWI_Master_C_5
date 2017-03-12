@@ -685,7 +685,7 @@ Bit 7, 6: Stunde 0
 Bit 5, 4: Stunde 1
 ...
 */
-uint8_t wert=Daten[Stunde/4]; // Byte in Daten
+uint8_t wert=Daten[Stunde/4]; // Byte in Array Daten
 //err_puts(" w0");
 //err_puthex(wert);
 uint8_t i=Stunde%4;		// Position im Byte
@@ -1315,7 +1315,12 @@ uint8_t WebTagSchreiben(unsigned char ADRESSE, uint8_t Daten[], uint8_t flags)
 
 uint8_t WochentagLesen(unsigned char ADRESSE, uint8_t *Daten, uint8_t Raum, uint8_t Objekt, uint8_t Wochentag)
 {
-	
+   // EEPROM_WOCHENPLAN_ADRESSE: A0
+   // HEIZUNG: 0
+   // Objekt: 0
+   // Tag:Zeit.wochentag
+   // xyz > uint_t16 code = Raum*100 + objekt*10 + Tag
+
 	uint8_t eepromerfolg=0;
 	/*
 	lcd_cls();

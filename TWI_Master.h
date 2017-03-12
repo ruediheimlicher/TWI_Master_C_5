@@ -80,6 +80,17 @@
 #define A4	0xA4
 #define A5	0xA5
 
+#define INNEN			0	// Bit fuer Innentemperatur
+
+// TWI
+#define STATUS			3	// Byte fuer Status
+
+// Strom
+#define STROMHH      4 // Bytes fuer Stromdaten
+#define STROMH       5
+#define STROML       6
+
+
 
 
 /*Der Buffer fuer die Daten der DCF-Uhr.*/
