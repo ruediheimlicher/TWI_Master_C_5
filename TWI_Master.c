@@ -2432,7 +2432,8 @@ int main (void)
                            err_puts("            \0");
                            
                            lcd_clr_line(1);
-                           lcd_puts("S     \0");
+                           lcd_puts("S\0");
+                            lcd_puts(" WAIT");
                         }
                         
                      }
