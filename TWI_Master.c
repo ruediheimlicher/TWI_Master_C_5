@@ -4320,8 +4320,7 @@ int main (void)
                         
                         
 								//lesen von Estrich
-                        
-                        
+                                                
 								if (LeseStatus & (1<< ESTRICH))
 								{
 									
@@ -4382,9 +4381,9 @@ int main (void)
 									}
                            lcd_gotoxy(0,3);
                            lcd_putc('E');
-                           lcd_puthex(EstrichRXdaten[5]);
-                           lcd_puthex(EstrichRXdaten[6]);
-                           lcd_puthex(EstrichRXdaten[7]);
+                           lcd_puthex(EstrichRXdaten[5]); // Kollektortemperatur
+                           lcd_puthex(EstrichRXdaten[6]); // 
+                           lcd_puthex(EstrichRXdaten[7]);// redKollektortemperatur>>1, Wert aus ADC / 2
 									
 									LeseStatus &= ~(1<< ESTRICH); // erledigt
 								}
