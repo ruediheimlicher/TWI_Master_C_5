@@ -2157,6 +2157,13 @@ int main (void)
 						lbyte=in_lbdaten;
 						hbyte=in_hbdaten;
 						
+                  // i2cStartadresse aus hbyte, lbyte
+                  // berechnet in AVRClient WriteStandardAktion
+                  uint16_t i2cStartadresse = lbyte | (hbyte << 8);
+                  
+                  uint8_t raum = i2cStartadresse / RAUMPLANBREITE;
+                  uint8_t objekt = (i2cStartadresse % RAUMPLANBREITE)/ TAGPLANBREITE;
+                  uint8_t wochentag = (i2cStartadresse % RAUMPLANBREITE %TAGPLANBREITE) / 0x08;
                   
 						uint8_t i=0;
 						for(i=0;i<8;i++)
@@ -2180,18 +2187,24 @@ int main (void)
 						lcd_puthex(in_hbdaten);
 						lcd_puthex(in_lbdaten);
 						lcd_putc(' ');
+                  
+                  lcd_putint2(raum);
+                  lcd_putc(' ');
+                  lcd_putint2(objekt);
+                  lcd_putc(' ');
+                  lcd_putint2(wochentag);
+                  /*
 						lcd_puthex(EEPROMTXdaten[0]);
 						lcd_puthex(EEPROMTXdaten[1]);
 						lcd_puthex(EEPROMTXdaten[2]);
 						lcd_puthex(EEPROMTXdaten[3]);
-						
+						*/
 						
 						uint8_t eepromerfolg=0;
 						
 						// EEPROMTXdaten: Array mit den Daten fuer das EEPROM, vom Webserver 
-						// hbyte, lbyte: Adresse im EEPROM, geschickt vom Webserver
-						
-                  //Daten ins EEPROM schreiben
+						// hbyte, lbyte: Adresse im EEPROM, geschickt vom Webserver						
+                  // Daten ins EEPROM schreiben
                   
 						eepromerfolg=EEPROMTagSchreiben(0xA0,(void*)EEPROMTXdaten,hbyte ,lbyte);
 						//err_gotoxy(19,0);

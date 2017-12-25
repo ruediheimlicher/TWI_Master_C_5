@@ -144,6 +144,21 @@ volatile uint8_t		TWI_Flag=0;
 
 //uint16_t				brennerzeit=0;
 
+// Data fuer temporaere Settings
+/*
+ raum: 8 
+   objekt: 4
+      wochentag: 8
+         Data: 8
+ */
+volatile uint8_t     daySettingArray[8][8][4][8] = {{{{0}}}}; // 1 Zeile pro raum, 8 Zeilen fuer tag, 4 Zeilen fuer objekt, 6 bytes Data 
+
+void daySettingSchreiben(uint8_t wochentag, uint8_t raum, uint8_t data[]);
+
+uint8_t daySettingLesen(uint8_t wochentag, uint8_t raum, uint8_t data[]);
+
+
+
 /*Der Buffer fuer die Daten der DCF-Uhr.*/
 //volatile uint8_t DCF77daten[buffer_size];//
 
