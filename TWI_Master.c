@@ -2186,12 +2186,12 @@ int main (void)
 						//Empfangene Angaben vom EEPRPOM
 						lcd_puthex(in_hbdaten);
 						lcd_puthex(in_lbdaten);
-						lcd_putc(' ');
+						lcd_putc('r');
                   
                   lcd_putint2(raum);
-                  lcd_putc(' ');
+                  lcd_putc('o');
                   lcd_putint2(objekt);
-                  lcd_putc(' ');
+                  lcd_putc('w');
                   lcd_putint2(wochentag);
                   /*
 						lcd_puthex(EEPROMTXdaten[0]);
@@ -2445,7 +2445,7 @@ int main (void)
                            err_puts("            \0");
                            
                            lcd_clr_line(1);
-                           lcd_puts("S\0");
+                           lcd_puts("S  ");
                             lcd_puts(" WAIT");
                         }
                         
