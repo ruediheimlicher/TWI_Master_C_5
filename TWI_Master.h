@@ -150,8 +150,9 @@ volatile uint8_t		TWI_Flag=0;
    objekt: 4
       wochentag: 8
          Data: 8
+ zu gross fuer 644p
  */
-volatile uint8_t     daySettingArray[8][8][4][8] = {{{{0}}}}; // 1 Zeile pro raum, 8 Zeilen fuer tag, 4 Zeilen fuer objekt, 6 bytes Data 
+// volatile uint8_t     daySettingArray[8][8][8][8] = {{{{0}}}}; // 1 Zeile pro raum, 8 Zeilen fuer tag, 4 Zeilen fuer objekt, 6 bytes Data 
 
 void daySettingSchreiben(uint8_t wochentag, uint8_t raum, uint8_t data[]);
 

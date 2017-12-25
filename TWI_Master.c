@@ -2165,7 +2165,17 @@ int main (void)
                   uint8_t objekt = (i2cStartadresse % RAUMPLANBREITE)/ TAGPLANBREITE;
                   uint8_t wochentag = (i2cStartadresse % RAUMPLANBREITE %TAGPLANBREITE) / 0x08;
                   
-						uint8_t i=0;
+                  for (int dataindex=0;dataindex < 6; dataindex++)
+                  {
+             //        daySettingArray[raum][objekt][wochentag][dataindex] = inbuffer[dataindex];
+                     
+                  }
+             //     daySettingArray[raum][objekt][wochentag][7] = 1; // markierung temporaer
+
+						
+                  
+                  
+                  uint8_t i=0;
 						for(i=0;i<8;i++)
 						{
 							EEPROMTXdaten[i]=inbuffer[i];
@@ -2186,8 +2196,7 @@ int main (void)
 						//Empfangene Angaben vom EEPRPOM
 						lcd_puthex(in_hbdaten);
 						lcd_puthex(in_lbdaten);
-						lcd_putc('r');
-                  
+						lcd_putc('r');                  
                   lcd_putint2(raum);
                   lcd_putc('o');
                   lcd_putint2(objekt);
