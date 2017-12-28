@@ -3434,7 +3434,9 @@ int main (void)
 										}
 										
 										// Strom lesen
-										
+                              outbuffer[33] = WerkstattRXdaten[STROMHH];
+                              outbuffer[34] = WerkstattRXdaten[STROMH];
+                              outbuffer[35] = WerkstattRXdaten[STROML];
 									}
 									
 									
