@@ -3390,8 +3390,11 @@ int main (void)
                            
                         SchreibStatus &= ~(1<< WERKSTATT);
 								}
-								
-								if (LeseStatus & (1<< WERKSTATT))	//lesen von Werkstatt
+                        
+                        
+								//lesen von Werkstatt
+                        
+								if (LeseStatus & (1<< WERKSTATT))	
 								{
 									delay_ms(2);
 									//err_gotoxy(5,1);
@@ -3437,6 +3440,14 @@ int main (void)
                               outbuffer[33] = WerkstattRXdaten[STROMHH];
                               outbuffer[34] = WerkstattRXdaten[STROMH];
                               outbuffer[35] = WerkstattRXdaten[STROML];
+                              /*
+                               lcd_gotoxy(0,3);
+                               lcd_putc('E');
+                               lcd_puthex(EstrichRXdaten[5]); // Kollektortemperatur
+                               lcd_puthex(EstrichRXdaten[6]); // 
+                               lcd_puthex(EstrichRXdaten[7]);// redKollektortemperatur>>1, Wert aus ADC / 2
+
+                               */
 									}
 									
 									
@@ -4403,12 +4414,13 @@ int main (void)
 										//		outbuffer[i]=EstrichRXdaten[i];			// Fuer Test: Daten ab Byte 0 von outbuffer
 										outbuffer[estrich +i]=EstrichRXdaten[i]; // Daten ab Byte 'estrich' von outbuffer Byte 9
 									}
+                           /*
                            lcd_gotoxy(0,3);
                            lcd_putc('E');
                            lcd_puthex(EstrichRXdaten[5]); // Kollektortemperatur
                            lcd_puthex(EstrichRXdaten[6]); // 
                            lcd_puthex(EstrichRXdaten[7]);// redKollektortemperatur>>1, Wert aus ADC / 2
-									
+									*/
 									LeseStatus &= ~(1<< ESTRICH); // erledigt
 								}
 								
@@ -4477,6 +4489,11 @@ int main (void)
 							 err_putc('E');
 							 err_puthex(EEPROM_Err);
 							 delay_ms(1000);
+                     
+                     outbuffer[FEHLERBYTE]=Read_Err;      // Byte 24
+                     outbuffer[FEHLERBYTE+1]=Write_Err;
+                     outbuffer[FEHLERBYTE+2]=EEPROM_Err;
+                     
 							if (twi_Call_count0==twi_Reply_count0) // alles OK
 							{
 								//err_puts("OK\0");
@@ -4487,9 +4504,6 @@ int main (void)
 							}
 							else
 							{
-								outbuffer[FEHLERBYTE]=Read_Err;		// Byte 24
-								outbuffer[FEHLERBYTE+1]=Write_Err;
-								outbuffer[FEHLERBYTE+2]=EEPROM_Err;
                         
                         for (int i=44;i<48;i++)
                         {
