@@ -3314,7 +3314,6 @@ int main (void)
 										int OfenStundencode=Tagplanwert(Werkstatttagblock, Zeit.stunde);
                               OfenStundencode &= 0x03;	// Bit 0 und 1 filtern fuer TXdaten[1]
                               
-                              
                               if (OfenStundencode) // Stundenwert ist >0, Ofen ein
                               {
                                  //txbuffer[0] |= (1<< 1); // Bit 1 setzen
