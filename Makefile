@@ -48,7 +48,7 @@ MCU = atmega644p
 #     processor frequency. You can then use this symbol in your source code to 
 #     calculate timings. Do NOT tack on a 'UL' at the end, this will be done
 #     automatically to create a 32-bit value in your source code.
-F_CPU = 8000000
+F_CPU = 1000000
 
 
 # Output format. (can be srec, ihex, binary)
@@ -202,7 +202,8 @@ LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
 AVRDUDE_PROGRAMMER = avrusb500
 
 # com1 = serial port. Use lpt1 to connect to parallel port.
-AVRDUDE_PORT = /dev/tty.usbserial-A3001g4o    # programmer connected to serial device
+#AVRDUDE_PORT = /dev/tty.usbserial-A3001g4o    # programmer connected to serial device
+AVRDUDE_PORT = /dev/tty.usbserial-A801JIUR
 
 AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
 #AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(TARGET).eep

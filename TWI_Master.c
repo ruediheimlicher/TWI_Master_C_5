@@ -106,6 +106,13 @@ static volatile uint8_t EEPROM_Err;
 static volatile uint8_t Echo=0;
 static volatile uint8_t olderrcounter=0;
 /* ************************************** */
+volatile uint8_t sevenseg = 0;
+volatile uint8_t sevensegalt = 0;
+
+
+
+/* ************************************** */
+
 //static char d[3];
 //static char* key1;
 //static char* sstr;
@@ -463,7 +470,6 @@ volatile uint8_t WebStatus=0x00; //	Webserver abfragen
 
 //Status Loop
 volatile uint8_t BUS_Status=0x00;//		Anfangspos: TWI OFF, wird nach Startdelay eingeschaltet, WEB ist am Anfang OFF
-
 
 #pragma mark Signal Status
 //Status Timer
@@ -852,6 +858,18 @@ void masterinit(void)
 	
 	
 }
+void sevenseginit(void)
+{
+   DDRA |= 0x0F; // PIN 0-3 Ausgang
+   PORTA |= 0x0F; // hi
+   DDRB |= 0x0F;
+   PORTB |= 0x0F; // hi
+   
+   DDRA |= (1<<4); // Ausgang digit 1, active hi
+   PORTA &= ~(1<<4); // LO
+   DDRD |= (1<<7); // Ausgang digit 2
+   PORTD &= ~(1<<7); // LO
+}
 
 uint8_t Tastenwahl(uint8_t Tastaturwert)
 {
@@ -1190,9 +1208,96 @@ uint8_t RTC_Abrufen (void)
 	
 	return RTCerfolg;
 	// end Uhr lesen
-	
 }
 
+
+uint8_t  SevenSegment(uint8_t count,uint8_t dp, uint8_t dec_hex)
+{
+   // https://www.kanda.com/7segment.php
+   /* This function shows value of count on display the decimal point is displayed if dp=1
+    Note:
+    count must be less than 10 for decimal, or less than 16 for Hex. 
+    *******  Segments are active low ******
+    */
+   if(count <dec_hex)
+   {
+      switch (count)
+      {
+         case 0:
+            return 0b10001000;
+            break;
+            
+         case 1:
+            return 0b10111110;
+            break;
+            
+         case 2:
+            return 0b00011001;
+            break;
+            
+         case 3:
+            return 0b00011100;
+            break;
+            
+         case 4:
+            return 0b00101110;
+            break;
+            
+         case 5:
+            return 0b01001100;
+            break;
+            
+         case 6:
+            return 0b01001000;
+            break;
+            
+         case 7:
+            return 0b10111100;
+            break;
+            
+         case 8:
+            return 0b00001000;
+            break;
+            
+         case 9:
+            return 0b00001100;
+            break;
+            //hex only 
+         case 10:
+            return 0b00101000;  //A
+            break;
+         case 11:
+            return 0b01001010;  //b
+            break;
+         case 12:
+            return 0b11001001;  //C
+            break;
+         case 13:
+            return 0b00011010;  //d
+            break;
+         case 14:
+            return 0b01001001;  //E
+            break;
+         case 15:
+            return 0b01101001;  //F
+            break;
+      }
+      if(dp)
+      {
+         //if decimal point should be displayed make DP bit Low
+         //PORT_7_SEGMENT&=0b11110111;
+         return 0b11110111;
+      }
+   }
+   else
+   {
+      //This symbol on display shows that count was greater than 9 or 15 
+      //so display can't handle it 
+      
+      return 0b11011111;
+   }
+   return 0;
+}
 
 
 int main (void)
@@ -1372,15 +1477,7 @@ int main (void)
 		outbuffer[j]=0;
 		inbuffer[j]=0;
 	}
-   /*
-	outbuffer[0]=' ';
-	outbuffer[1]='H';
-	outbuffer[2]='o';
-	outbuffer[3]='m';
-	outbuffer[4]='e';
-	outbuffer[5]=' ';
-	*/
-	out_startdaten='+';
+ 	out_startdaten='+';
 	BUS_Status |=  (1<<TWI_CONTROLBIT);			// TWI am Anfang einschalten
 
 	lcd_clr_line(0);
@@ -1422,9 +1519,12 @@ int main (void)
 	lcd_clr_line(0);
 	//lcd_puts("Los!\0");
 	delay_ms(10);
+   
+   //sevenseginit();
 	while (1)
 	{
-		
+      sevensegalt++;
+      
 		// Startfunktion: SCL und SDA pruefen
 		if (startdelay==STARTDELAY)
 		{
@@ -1466,9 +1566,8 @@ int main (void)
 				
 				// stunde, minute, sekunde
 				res=rtc_write_Zeit(14,38,0);// uint8_t stunde, uint8_t minute, uint8_t sekunde
-
             delay_ms(10);
-				/*
+				
 				if (res)
 				{
 					err_gotoxy(0,1);
@@ -1478,17 +1577,17 @@ int main (void)
 					err_gotoxy(0,1); 
 					err_puts("Z+\0");
 				}
-				*/
+				
 				// Datum: 1 = Montag
-				res=rtc_write_Datum(6,23,4,15);// uint8_t wochentag, uint8_t tagdesmonats, uint8_t monat, uint8_t jahr
+				res=rtc_write_Datum(6,23,4,17);// uint8_t wochentag, uint8_t tagdesmonats, uint8_t monat, uint8_t jahr
 				delay_ms(10);
 				
 				if (res)
 				{
-               err_gotoxy(0,1);
+               err_gotoxy(4,1);
 					err_puts("     \0");
 
-					err_gotoxy(0,1);
+					err_gotoxy(4,1);
 					err_puts("D-\0");
 				}
 				else
@@ -1518,7 +1617,7 @@ int main (void)
       #pragma mark Standardloop start
 		
 		loopcount0++;
-		if (loopcount0 >= 0x00FF)
+		if (loopcount0 >= 0x01FF)
 		{
 			LOOPLEDPINPORT ^=(1<<LOOPLEDPIN); // Blink-LED
 			
@@ -1537,6 +1636,13 @@ int main (void)
 			
 			if (loopcount1>=0x2F)
 			{
+            lcd_gotoxy(0,0);
+            uint8_t sevenseglo = sevenseg & 0x0F;
+            uint8_t sevenseghi = (sevenseg & 0xF0)>>4;
+            //lcd_putc(sevenseglo);
+            //lcd_putc(sevenseghi);
+            sevenseg++;
+            
             
 				//lcd_gotoxy(2,1);
 				//lcd_puts("Wechsel \0");
@@ -1572,7 +1678,7 @@ int main (void)
 		// Startroutinen sind abgelaufen oder ganz am Anfang  
 		// SDA und SCL sind laengere Zeit nicht gleichzeitig HI: Fehlersituation
 		
-		if (((startdelay==0)||(startdelay==STARTDELAY))&& (((!(PINC & (1<<SDAPIN))) && PINC & (1<<SCLPIN)) ) )// SDA ist LO und SCL ist HI (warten auf Ack)
+		if (((startdelay==0)||(startdelay==STARTDELAY))&& (((!(PINC & (1<<SDAPIN))) && PINC & (1<<SCLPIN)) ) )// SDA ist LO UND SCL ist HI (warten auf Ack)
       {
          err_gotoxy(15,1);
          err_puts("ERR\0");
@@ -1660,7 +1766,9 @@ int main (void)
 		//err_putc('-');
 		
 		// ***********************
-		if (SPI_CONTROL_PORTPIN & (1<< SPI_CONTROL_CS_HC)) // MISO ist HI in Pausen.
+      // Abfrage CS
+      
+		if (SPI_CONTROL_PORTPIN & (1<< SPI_CONTROL_CS_HC)) // Ist CS HI? (CS ist HI in Pausen)
 		{
 			// ***********************
 			/*
@@ -1671,11 +1779,11 @@ int main (void)
 			 */
 			 			
 			// ***********************
-			SPI_CONTROL_PORT |= (1<<SPI_CONTROL_MISO); // CS ist HI, SPI ist Passiv,
+			SPI_CONTROL_PORT |= (1<<SPI_CONTROL_MISO); // CS ist HI, SPI ist Passiv, MISO soll HI sein
 			
 			#pragma mark PASSIVE
 
-			if (spistatus &(1<<ACTIVE_BIT)) // Slave ist neu passiv geworden. Aufraeumen, Daten uebernehmen
+			if (spistatus &(1<<ACTIVE_BIT)) //  Slave ist neu passiv geworden. Aufraeumen, Daten uebernehmen
 			{
 				
 				wdt_reset();
@@ -1817,7 +1925,9 @@ int main (void)
 				//lcd_puthex(errCounter);
 				
 				// Bits im Zusammenhang mit der Uebertragung zuruecksetzen. Wurden in ISR gesetzt
+            
 				spistatus &= ~(1<<ACTIVE_BIT);		// Bit 0 loeschen
+            
 				spistatus &= ~(1<<STARTDATEN_BIT);	// Bit 1 loeschen
 				spistatus &= ~(1<<ENDDATEN_BIT);		// Bit 2 loeschen
 				spistatus &= ~(1<<SUCCESS_BIT);		// Bit 3 loeschen
@@ -1873,7 +1983,7 @@ int main (void)
 					inbuffer[j]=0;
 				}
 				
-				spistatus |=(1<<ACTIVE_BIT); // Bit 0 setzen: neue Datenserie
+				spistatus |=(1<<ACTIVE_BIT); // Bit 0 setzen: neue Datenserie beginnt
 				spistatus |=(1<<STARTDATEN_BIT); // Bit 1 setzen: erster Wert ergibt StartDaten
 				
 				bitpos=0;
@@ -1996,7 +2106,7 @@ int main (void)
 							//BUS_Status &= ~(1<<WEB_CONTROLBIT);		// WEB OFF
 						
 						}
-						else if (in_hbdaten == 0x00)
+						else if (in_hbdaten == 0x00)// TWI solll ausgeschaltet werden
 						{
 							BUS_Status &= ~(1<<TWI_CONTROLBIT);		// TWI OFF
 						
@@ -2196,18 +2306,18 @@ int main (void)
 						//Empfangene Angaben vom EEPRPOM
 						lcd_puthex(in_hbdaten);
 						lcd_puthex(in_lbdaten);
-						lcd_putc('r');                  
+						//lcd_putc('r');                  
                   lcd_putint2(raum);
-                  lcd_putc('o');
+                  //lcd_putc('o');
                   lcd_putint2(objekt);
-                  lcd_putc('w');
+                  //lcd_putc('w');
                   lcd_putint2(wochentag);
-                  /*
+                  
 						lcd_puthex(EEPROMTXdaten[0]);
 						lcd_puthex(EEPROMTXdaten[1]);
 						lcd_puthex(EEPROMTXdaten[2]);
 						lcd_puthex(EEPROMTXdaten[3]);
-						*/
+						
 						
 						uint8_t eepromerfolg=0;
 						
@@ -2297,7 +2407,7 @@ int main (void)
                   }
                }break;
 						
-						
+#pragma mark 	DATATASK					
 					case DATATASK:
 						
 					//default:						// DATATASK
@@ -2393,7 +2503,7 @@ int main (void)
                            err_puts("R1\0");
                            //err_putc(' ');
                            err_puthex(RTC_erfolg);
-                           //err_putc(' ');
+                           err_putc(' ');
                            err_puthex(versuche);
                            versuche++;
                         }
@@ -2455,7 +2565,7 @@ int main (void)
                            
                            lcd_clr_line(1);
                            lcd_puts("S  ");
-                            lcd_puts(" WAIT");
+                           lcd_puts(" WAIT");
                         }
                         
                      }
@@ -2542,9 +2652,6 @@ int main (void)
                               }
                               
                            }
-                           
-                           
-                           
                         } // end DCF77erfolg=0
                         
                      } // end (uhrstatus & (1<<SYNC_WAIT)
@@ -2587,16 +2694,24 @@ int main (void)
                         {
                            SchreibStatus=0;
                            LeseStatus=0;
-                           err_gotoxy(10,0);
-                           err_puts("RTC2\0");
-                           err_putc(' ');
+                           err_gotoxy(12,0);
+                           err_puts("RTC\0");
+                           //err_putc(' ');
                            err_puthex(RTC_erfolg);
                            err_putc('!');
                            
                            outbuffer[6] = RTC_erfolg;
                            // aktuelle Schlaufe verlassen
                         }
-                        
+                        else
+                        {
+                           err_gotoxy(12,2);
+                           err_puts("RTC OK\0");
+                           err_gotoxy(0,2);
+                           err_putint2(RTCdaten[1]);
+                           err_putc(':');
+                           err_putint2(RTCdaten[0]);
+                        }
                         
                      }
                      // Ende Synchronisation
@@ -2618,7 +2733,17 @@ int main (void)
                   // ++++++++++++++++++++++++++++++++
                   // End NOT TEST
                   // ++++++++++++++++++++++++++++++++						
-						
+                  err_gotoxy(0,3);
+                  err_putc('R');
+                  err_putint2(RTCdaten[1]);
+                  err_putc(':');
+                  err_putint2(RTCdaten[0]);
+                  err_putc(' ');
+                  err_putc('D');
+                  err_putint2(DCF77daten[1]);
+                  err_putc(':');
+                  err_putint2(DCF77daten[0]);
+
 						readSR();				// Liste der abzufragenden Slaves lesen
 						
 						// Nur abfragen, wenn TWI laeuft
@@ -2632,6 +2757,8 @@ int main (void)
 							SchreibStatus=0; 
 							LeseStatus=0;
 						}
+                  
+                  LeseStatus |= (1<<OG2);
                   
                   outbuffer[43] = LeseStatus;
                   outbuffer[44] = SchreibStatus;
@@ -2669,6 +2796,11 @@ int main (void)
 						Read_Err=0;
 						EEPROM_Err=0;
 						
+                  lcd_gotoxy(10,0);
+                  lcd_putint2(std);
+                  lcd_putc(':');
+                  lcd_putint2(min);
+
 						if ((SchreibStatus || LeseStatus)&& (!(uhrstatus & (1<<SYNC_NEW))))		// Uhr nicht gerade am Synchronisieren
                      // && (twi_HI_count0 >= 0x02))//&&(TastaturCount==0))
 						{
@@ -2709,8 +2841,10 @@ int main (void)
 								std= RTCdaten[1];
 								tag= RTCdaten[2];
 								
-								lcd_gotoxy(17,0);
-								lcd_putint2(min);
+								lcd_gotoxy(10,0);
+								lcd_putint2(std);
+                        lcd_putc(':');
+                        lcd_putint2(min);
 								/*								
 								 min= DCF77daten[0];
 								 std= DCF77daten[1];
@@ -2847,6 +2981,7 @@ int main (void)
                            // xyz > uint_t16 code = Raum*100 + objekt*10 + Tag
 
 									uint8_t erfolg=WochentagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock, HEIZUNG, 0, Zeit.wochentag);
+                           
 									//OSZIAHI;
 									delay_ms(1);
 									//OSZIALO;
@@ -3029,9 +3164,6 @@ int main (void)
 										{
 											txbuffer[2] = 0x00;
 										}
-										
-										
-										
 									}
 									else
 									{
@@ -3695,7 +3827,7 @@ int main (void)
 									//delay_ms(400);
 									//err_puthex(LeseStatus);
                            
-                           outbuffer[23] = BueroRXdaten[1]; // Temp
+                           outbuffer[23] = BueroRXdaten[1]; // Temperatur buero
                            
                            
                            lcd_gotoxy(10,0);

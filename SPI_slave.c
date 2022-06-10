@@ -215,6 +215,8 @@ void InitSPI_Slave(void)
 
 	SPI_CONTROL_DDR   |= (1<<SPI_CONTROL_MISO);		// MISO als Output
 	SPI_CONTROL_PORT	|= (1<<SPI_CONTROL_MISO);		// HI
+   
+   // CS wird vom Webserver gesteuert
 	SPI_CONTROL_DDR	&= ~(1<<SPI_CONTROL_CS_HC);	// Chip Select als Eingang
 	SPI_CONTROL_PORT	|= (1<<SPI_CONTROL_CS_HC);		// HI
 

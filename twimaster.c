@@ -33,6 +33,11 @@ uint16_t MAX_TRIES = 400;
 #define READ_ACKERR		0xA6
 #define READ_NACKERR		0xA6
 
+#define STARTWAITERR    0xA7
+#define WAITERR         0xA8
+
+#define ARBLOSTERR      0xA9
+#define STOPINSTARTERR  0xAA
 
 #define OSZIPORT				PORTA
 #define OSZIPORTDDR			DDRA
@@ -71,6 +76,7 @@ extern void err_puthex(uint8_t zahl);
 void err_clr_part(uint8_t Linie, uint8_t von, uint8_t bis);
 uint8_t i2c_debloc(void);
 
+volatile uint8_t TWI_FLAG = 0; // Error in TWI-Funktionen
 /*************************************************************************
  Initialization of the I2C bus interface. Need to be called only once
 *************************************************************************/
@@ -86,7 +92,7 @@ void i2c_init(void)
 	//lcd_gotoxy(0,3);
    //lcd_puthex(TWBR);
    
-   TWBR=64;
+   TWBR=64; // 64
 }/* i2c_init */
 
 
@@ -100,6 +106,7 @@ unsigned char i2c_start(unsigned char address)
     uint8_t   twst;
 	uint8_t counter=0;
 	uint16_t whilecounter = WHILEMAX; // 5 ms
+   TWI_Flag=0;
 //	lcd_cls();
 //	lcd_puts("i2c_start\0");
 //	delay_ms(400);
@@ -113,6 +120,7 @@ unsigned char i2c_start(unsigned char address)
 		err_puthex(address);
 		//delay_ms(200);
 		TWI_Flag=MAX_TRIESERR;
+      TWI_FLAG=MAX_TRIESERR;
 		//OSZIAHI;
 		return MAX_TRIESERR;
 	}
@@ -135,6 +143,7 @@ unsigned char i2c_start(unsigned char address)
 	if (whilecounter==0) // kein Erfolg
 	{
 		TWI_Flag=STARTERR;
+      TWI_FLAG=STARTERR;
 		//OSZIAHI;
 		return STARTERR;
 	}
@@ -147,7 +156,9 @@ unsigned char i2c_start(unsigned char address)
 	 }
 	if ( (twst != TW_REP_START) && (twst != TW_START)) 
 	{
-		return 2;
+      TWI_Flag=ARBLOSTERR;
+      TWI_FLAG=ARBLOSTERR;
+		return ARBLOSTERR;
 	}
 
 	// send device address
@@ -163,6 +174,7 @@ unsigned char i2c_start(unsigned char address)
 	if (whilecounter==0)	// Address-Fehler
 	{
 		TWI_Flag=ADDRESSERR;
+      TWI_FLAG=ADDRESSERR;
 		//OSZIAHI;
 		return ADDRESSERR;
 	}
@@ -176,10 +188,11 @@ unsigned char i2c_start(unsigned char address)
 		delay_ms(1);
 		goto restart;
 	 }
-	if (twst == TW_MT_ARB_LOST) goto begin;
+	if (twst == TW_MT_ARB_LOST) 
+   {
+      goto begin;
+   }
 	if ( (twst != TW_MT_SLA_ACK ) && (twst != TW_MR_SLA_ACK)) goto error;
-
-	
 
 	return 0;
 
@@ -193,7 +206,9 @@ error:
 	// send stop condition
 	TWCR = (1 << TWINT) | (1 << TWEN) | (1 << TWSTO);
 	//OSZIAHI;
-	return 3;
+   TWI_Flag=STOPINSTARTERR;
+   TWI_FLAG=STOPINSTARTERR;
+	return STOPINSTARTERR;
 }/* i2c_start */
 
 
@@ -203,19 +218,25 @@ error:
  
  Input:   address and transfer direction of I2C device
 *************************************************************************/
-void i2c_start_wait(unsigned char address)
+unsigned char i2c_start_wait(unsigned char address)
 {
     uint8_t   twst;
-
-
+   uint16_t whilecounter = WHILEMAX; // 5 ms
+   TWI_Flag=0;
     while ( 1 )
     {
 	    // send START condition
 	    TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);
     
     	// wait until transmission completed
-    	while(!(TWCR & (1<<TWINT)));
-    
+    	while((!(TWCR & (1<<TWINT)))&& whilecounter--);
+         if (whilecounter==0)   // Address-Fehler
+         {
+            TWI_Flag=STARTERR;
+            //OSZIAHI;
+            return STARTERR;
+         }
+
     	// check value of TWI Status Register. Mask prescaler bits.
     	twst = TW_STATUS & 0xF8;
     	if ( (twst != TW_START) && (twst != TW_REP_START)) continue;
@@ -225,24 +246,38 @@ void i2c_start_wait(unsigned char address)
     	TWCR = (1<<TWINT) | (1<<TWEN);
     
     	// wail until transmission completed
-    	while(!(TWCR & (1<<TWINT)));
+    	while((!(TWCR & (1<<TWINT)))&& whilecounter--);
+       if (whilecounter==0)   // Address-Fehler
+       {
+          TWI_Flag=ADDRESSERR;
+          //OSZIAHI;
+          return ADDRESSERR;
+       }
+
     
     	// check value of TWI Status Register. Mask prescaler bits.
     	twst = TW_STATUS & 0xF8;
+       
     	if ( (twst == TW_MT_SLA_NACK )||(twst ==TW_MR_DATA_NACK) ) 
     	{    	    
     	    /* device busy, send stop condition to terminate write operation */
 	        TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
 	        
 	        // wait until stop condition is executed and bus released
-	        while(TWCR & (1<<TWSTO));
-	        
+	        while((TWCR & (1<<TWSTO))&& whilecounter--) ;
+         if (whilecounter==0)   // Address-Fehler
+         {
+            TWI_Flag= STARTWAITERR;
+            //OSZIAHI;
+            return STARTWAITERR;
+         }
+
     	    continue;
     	}
     	//if( twst != TW_MT_SLA_ACK) return 1;
     	break;
      }
-
+   return 0;
 }/* i2c_start_wait */
 
 
@@ -267,6 +302,7 @@ unsigned char i2c_rep_start(unsigned char address)
 void i2c_stop(void)
 {
 	uint16_t whilecounter=WHILEMAX; // 5 ms
+   
     /* send stop condition */
 //	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWSTO);
 //	29.10.08
@@ -298,7 +334,7 @@ unsigned char i2c_write( unsigned char data )
 {	
     uint8_t   twst;
     uint16_t whilecounter=WHILEMAX; // 5 ms
-	
+	TWI_Flag=0;
 	// send data to the previously addressed device
 	TWDR = data;
 	TWCR = (1<<TWINT) | (1<<TWEN);
@@ -332,7 +368,7 @@ unsigned char i2c_write( unsigned char data )
 unsigned char i2c_readAck(void)
 {
 	uint16_t whilecounter=WHILEMAX; // 5 ms
-	
+	TWI_Flag=0;
 	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWEA);
 	while(!(TWCR & (1<<TWINT)) && whilecounter)
 	{
@@ -341,8 +377,8 @@ unsigned char i2c_readAck(void)
 	if (whilecounter==0)	// Read-Ack-Fehler
 	{
 		TWI_Flag=READ_ACKERR;
-		
 	}
+   
 
     return TWDR;
 
@@ -356,6 +392,7 @@ unsigned char i2c_readAck(void)
 *************************************************************************/
 unsigned char i2c_readNak(void)
 {
+   TWI_Flag=0;
 	uint16_t whilecounter=WHILEMAX; // 5 ms
 		//lcd_gotoxy(16,0);
 		//lcd_puts("NACK\0");
@@ -369,7 +406,7 @@ unsigned char i2c_readNak(void)
 
 	if (whilecounter==0)	// Read-Nack-Fehler
 	{
-		TWI_Flag=READ_ACKERR;
+		TWI_Flag=READ_NACKERR;
 		
 	}
 	
