@@ -207,7 +207,6 @@ volatile uint8_t  uhrstatus =0;
 #define SYNC_NULL		4	// Uhr ist undefiniert, wartet auf Synchronisation (nach restart)
 #define SYNC_NEW		5	// erste Synchrinisation nach Reset, noch keine gueltige Zeit
 
-volatile uint8_t  DCF77_counter =0; // Anzahl gueltige Datumspakete in Folge
 #define MIN_SYNC		2	// Anzahl gueltige Daten fuer Synchronisation
 
 
@@ -228,7 +227,7 @@ volatile uint8_t  DCF77_counter =0; // Anzahl gueltige Datumspakete in Folge
 #define TASTE0 235
 #define TASTER 245
 
-#define STARTDELAY 0x0FF
+#define STARTDELAY 0x00F
 //#define STARTDELAY 0
 
 #define WOCHENPLANBREITE 0x40;
@@ -780,7 +779,12 @@ void setTagplan(uint8_t *Daten)
 
 void masterinit(void)
 {
-
+   //
+   // ************************************************
+   // avrdude: safemode: Fuses OK (E:FF, H:99, L:42) // clock div8
+   // ************************************************
+   
+   
 	DDRB &= ~(1<<5); // Pin 5 von Port B als Eingang fuer Servotest 0
 	PORTB |= (1<<5); //HI
 
@@ -1009,30 +1013,7 @@ void readSR (void)
 	
 }
 
-uint8_t UhrAbrufen (void)
-{
-	/*
-	Knackpunkte:
-	min, std, tag
-	neueZeit
-	*/
-	//uint8_t i=0;
-	//lcd_clr_line(1);
-	/*
-	lcd_gotoxy(0,1);
-	lcd_puts("U\0");
-	lcd_putc(' ');
-	lcd_gotoxy(1,1);
-	*/
-		
-	//	DCF-Uhr lesen
-	uint8_t DCF77erfolg=0;
-	DCF77erfolg=SlavedatenLesen(DCF77_ADRESSE,(void*)DCF77daten);
-	
-	return DCF77erfolg;
-	// end Uhr lesen
-	
-}
+
 
 
 uint8_t PWMDatenAbrufen (void)
@@ -1051,7 +1032,7 @@ uint8_t PWMDatenAbrufen (void)
    
 	//	DCF-Uhr lesen
 	uint8_t PWMerfolg=0;
-	PWMerfolg=SlavedatenLesen(EEPROM_WOCHENPLAN_ADRESSE,(void*)DCF77daten);
+//	PWMerfolg=SlavedatenLesen(EEPROM_WOCHENPLAN_ADRESSE,(void*)DCF77daten);
 	
 	return PWMerfolg;
 	// end Uhr lesen
@@ -1059,156 +1040,7 @@ uint8_t PWMDatenAbrufen (void)
 }
 
 
-uint8_t RTC_Abrufen (void)
-{
-	/*
-    Zeit.minute = DCF77daten[0];
-    Zeit.stunde = DCF77daten[1];
-    Zeit.kalendertag = DCF77daten[2];
-    Zeit.kalendermonat = DCF77daten[3];
-    Zeit.kalenderjahr = DCF77daten[4];
-    Zeit.wochentag = DCF77daten[5]-1;// DCF77 ist 1-basiert
-    
-    
-    */
-	/*
-    struct time
-    {
-    uint8_t sekunde;
-    uint8_t minute;
-    uint8_t stunde;
-    uint8_t kalendertag;
-    uint8_t wochentag;
-    uint8_t kalendermonat;
-    uint8_t kalenderjahr;
-    };
-    */
-   
-	//	RTC-Uhr lesen
-	//uint8_t data;
-	uint8_t RTCerfolg=0;
-	
-	/*
-    // Sekunden lesen: Register 0
-    RTCerfolg= DS1307Read(0x00,&data);
-    if (RTCerfolg)
-    {
-    return RTCerfolg;
-    }
-    
-    uint8_t sekunde = ((data & 0x70)>>4)*10 + (data & 0x0F);
-    
-    // Minuten lesen: Register 1
-    RTCerfolg= DS1307Read(0x01,&data);
-    if (RTCerfolg)
-    {
-    return RTCerfolg;
-    }
-    uint8_t minute=((data & 0xF0)>>4)*10 + (data & 0x0F);
-    
-    
-    
-    // Stunde lesen: Register 2
-    RTCerfolg= DS1307Read(0x02,&data);
-    if (RTCerfolg)
-    {
-    return RTCerfolg;
-    }
-    uint8_t stunde=((data & 0xF0)>>4)*10 + (data & 0x0F);;
-    */
-	uint8_t sekunde=0;
-	uint8_t minute=0;
-	uint8_t stunde=0;
-	
-	
-	
-	RTCerfolg=read_Zeit(&sekunde, &minute, &stunde);
-	
-	if (test)
-	{
-		err_gotoxy(0,0);
-		err_putint2(stunde);
-		err_putc(':');
-		err_putint2(minute);
-      err_gotoxy(0,4);
-      err_putc(' ');
-      err_gotoxy(0,4);
-      err_putc('>');
-      err_puthex(RTCerfolg);
-	}
-   err_gotoxy(0,0);
-   err_puthex(RTCerfolg);
-   
-	
-	RTCdaten[0]=minute;
-	RTCdaten[1]=stunde;
-	
-   
-	uint8_t wochentag;
-	uint8_t tagdesmonats;
-	uint8_t monat;
-	uint8_t jahr;
-	
-	RTCerfolg=Read_Datum(&wochentag,&tagdesmonats,&monat,&jahr);
-	
-	
-	
-   /*
-    err_gotoxy(0,1);
-    //err_puthex(RTCerfolg);
-    //err_gotoxy(3,1);
-    err_putint2(tagdesmonats);
-    err_putc(':');
-    err_putint2(monat);
-    err_putc(':');
-    err_putint2(jahr);
-    err_putc(':');
-    err_putint2(wochentag);
-    */
-   
-   if (test)
-   {
-      /*
-      err_gotoxy(6, 1);
-      switch (wochentag)
-      {
-         case 1:
-            err_puts("MO\0");
-            break;
-         case 2:
-            err_puts("DI\0");
-            break;
-         case 3:
-            err_puts("MI\0");
-            break;
-         case 4:
-            err_puts("DO\0");
-            break;
-         case 5:
-            err_puts("FR\0");
-            break;
-         case 6:
-            err_puts("SA\0");
-            break;
-         case 7:
-            err_puts("SO\0");
-            break;
-            
-      }//switch wochentag
-       */
-   }
 
-   err_gotoxy(2,0);
-   err_puthex(RTCerfolg);
-
-	RTCdaten[2]=tagdesmonats;
-	RTCdaten[3]=monat;
-	RTCdaten[4]=jahr;
-	RTCdaten[5]=wochentag;
-	
-	return RTCerfolg;
-	// end Uhr lesen
-}
 
 
 uint8_t  SevenSegment(uint8_t count,uint8_t dp, uint8_t dec_hex)
@@ -1341,7 +1173,6 @@ int main (void)
 	{
 		//LaborTXdaten[i]=0;
 		//LaborRXdaten[i]=0;
-		DCF77daten[i]=0x00;
 		txbuffer[i] = 0;
 	}
 	//WebTxStartDaten = 0x00;
@@ -1374,12 +1205,12 @@ int main (void)
 	
 	lcd_cls();
 	err_cls();
-	/*
+	
 	lcd_gotoxy(14,0);
 	lcd_puts("V:\0");
 	lcd_puts(VERSION);
 	delay_ms(800);
-	*/
+	
 //	lcd_gotoxy(19,1); 
 //	lcd_putc(165);	//	Punkt an letzter Stelle
 	
@@ -1542,6 +1373,8 @@ int main (void)
 		//	Startroutine noch im Gang: TWI beide Pins HI also RŸckwaertszaehlen
 		if( startdelay && ((PINC & (1<<SCLPIN) && (PINC & (1<<SDAPIN)))))	// SCL UND SDA ist HI
 		{
+         //err_gotoxy(0,1); 
+         //err_puthex(startdelay);
 			if (startdelay==1) // Letzter Durchlauf vor einschalten
 			{
 				DDRC &= ~(1<<DDC1);	//Pin 1 von PORT C als Eingang fuer TWI SDA
@@ -1552,7 +1385,7 @@ int main (void)
 				BUS_Status &=~(1<<WEB_CONTROLBIT);		// WEB OFF
 				lcd_clr_line(0);
 				err_gotoxy(0,1); 
-				err_puts("Start\0");	//	Erste Runde, Strich an letzter Stelle weg
+				err_puts("Start");	//	Erste Runde, Strich an letzter Stelle weg
 #pragma mark RTC init				
 				
             i2c_init();
@@ -1561,7 +1394,7 @@ int main (void)
 				rtc_init();
 				delay_ms(10);
 				uint8_t res=0;
-				
+/*				
 				res=rtc_write_Control(1);
 				
 				// stunde, minute, sekunde
@@ -1598,7 +1431,7 @@ int main (void)
 					err_gotoxy(0,1);
 					err_puts("D+\0");
 				}
-				
+*/				
 				wdt_reset();
 				sei();
 				
@@ -1617,15 +1450,15 @@ int main (void)
       #pragma mark Standardloop start
 		
 		loopcount0++;
-		if (loopcount0 >= 0x01FF)
+		if (loopcount0 >= 0x00FF)
 		{
 			LOOPLEDPINPORT ^=(1<<LOOPLEDPIN); // Blink-LED
 			
 			loopcount0=0;
 			loopcount1++;
-			//lcd_gotoxy(0,0);
+	//		lcd_gotoxy(16,0);
 			//lcd_puts("lpcnt1 \0");
-			//lcd_puthex(loopcount1);
+	//		lcd_puthex(loopcount1);
 			if (startdelay==0)
 			{
 				//				timer2(0xAF);
@@ -1634,15 +1467,18 @@ int main (void)
 				
 			}
 			
-			if (loopcount1>=0x2F)
+			if (loopcount1>=0x04)
 			{
-            lcd_gotoxy(0,0);
-            uint8_t sevenseglo = sevenseg & 0x0F;
-            uint8_t sevenseghi = (sevenseg & 0xF0)>>4;
+            //lcd_gotoxy(0,0);
+            //uint8_t sevenseglo = sevenseg & 0x0F;
+            //uint8_t sevenseghi = (sevenseg & 0xF0)>>4;
             //lcd_putc(sevenseglo);
             //lcd_putc(sevenseghi);
             sevenseg++;
-            
+            lcd_gotoxy(16,0);
+            //lcd_puts("lpcnt1 \0");
+            lcd_puthex(sevenseg);
+
             
 				//lcd_gotoxy(2,1);
 				//lcd_puts("Wechsel \0");
@@ -1681,7 +1517,7 @@ int main (void)
 		if (((startdelay==0)||(startdelay==STARTDELAY))&& (((!(PINC & (1<<SDAPIN))) && PINC & (1<<SCLPIN)) ) )// SDA ist LO UND SCL ist HI (warten auf Ack)
       {
          err_gotoxy(15,1);
-         err_puts("ERR\0");
+         err_puts("ERR");
          
          /*
           
@@ -1751,8 +1587,8 @@ int main (void)
 			twi_LO_count0=0;
 			twi_LO_count1=0;
 			wdt_reset();
-			//err_gotoxy(15,1);
-			//err_puts("OK \0");
+			err_gotoxy(15,1);
+			err_puts("   ");
 						//err_puthex(tempWDT_Count);
 						//delay_ms(1000);
 
@@ -1797,7 +1633,7 @@ int main (void)
 				lcd_gotoxy(0,2);
 				
 				// Eingang anzeigen
-				lcd_puts("iW \0");
+				lcd_puts("iW ");
 				lcd_puthex(in_startdaten);
 				lcd_putc(' ');
 				lcd_puthex(in_hbdaten);
@@ -1820,9 +1656,7 @@ int main (void)
             
             err_gotoxy(0,0);
 				err_puts("      \0");
-
-            
-				err_gotoxy(19,0);
+            err_gotoxy(19,0);
 				err_putc(' ');
 				err_gotoxy(19,0);
 				if (ByteCounter == SPI_BUFSIZE-1) // Uebertragung war vollstaendig
@@ -1842,6 +1676,9 @@ int main (void)
 						//					if (out_startdaten==0xB1)
 						{
 							SendOKCounter++;
+                     err_gotoxy(14,0);
+                     err_puts("OK");
+                     err_putint(SendOKCounter);
 						}
 						spistatus |= (1<<SPI_SHIFT_IN_OK_BIT);
 					}
@@ -1861,7 +1698,12 @@ int main (void)
                   spistatus &= ~(1<<SPI_SHIFT_IN_OK_BIT);
  						{
 							SendErrCounter++;
+                     err_gotoxy(14,0);
+                     err_puts("ER");
+                     err_putint(SendErrCounter);
+
 						}
+                  
 						//errCounter++;
 					}
 					
@@ -2019,7 +1861,14 @@ int main (void)
 				*/
 				
 			}//		if (!(spistatus & (1<<ACTIVE_BIT)))
-		}//											(IS_CS_HC_ACTIVE) 
+		else 
+      {
+         lcd_gotoxy(19,0);
+         lcd_putc(' ');
+
+      }
+      
+      }//											(IS_CS_HC_ACTIVE) 
 		
 		/* *** SPI end **************************************************************/
 	
@@ -2460,22 +2309,7 @@ int main (void)
                   {
                      
                      uint8_t RTC_erfolg=1;
-                     uint8_t versuche=0;
-                     // RTC lesen
-                     while (RTC_erfolg && versuche<0x0F)
-                     {
-                        RTC_erfolg = RTC_Abrufen();
-                        err_gotoxy(4,0);
-                        err_puts("R1\0");
-                        //err_putc(' ');
-                        err_puthex(RTC_erfolg);
-                        //err_putc(' ');
-                        err_puthex(versuche);
-                        versuche++;
-                     }
-                     
-                     
-                     SchreibStatus=0;
+                       SchreibStatus=0;
                      LeseStatus=0;
 
 
@@ -2486,235 +2320,6 @@ int main (void)
                    }
 						else
                   {
-                     
-#pragma mark Uhr
-                     //TWBR=48;
-                     if (!(uhrstatus & (1<<SYNC_NULL)))     // Nach reset, rtc noch nicht abfragen
-                        
-                     {
-                        uint8_t versuche=0;
-                        uint8_t RTC_erfolg=1;
-                        
-                        //         RTC_erfolg = RTC_Abrufen();
-                        while (RTC_erfolg && versuche<0x0F)
-                        {
-                           RTC_erfolg = RTC_Abrufen();
-                           err_gotoxy(4,0);
-                           err_puts("R1\0");
-                           //err_putc(' ');
-                           err_puthex(RTC_erfolg);
-                           err_putc(' ');
-                           err_puthex(versuche);
-                           versuche++;
-                        }
-                        
-                        //OSZIBHI;
-                        
-                        if (RTC_erfolg)				// Fehler, aussteigen
-                        {
-                           SchreibStatus=0;
-                           LeseStatus=0;
-                           err_gotoxy(4,0);
-                           err_puts("RTC1\0");
-                           err_putc('*');
-                           err_puthex(RTC_erfolg);
-                           //err_putc('!');
-                           
-                           outbuffer[6] = RTC_erfolg;
-                           //break;							// aktuelle Schlaufe verlassen
-                           
-                        }
-                        else
-                        {
-                           err_gotoxy(13,0);
-                           err_putc(' ');
-                           err_putc(' ');
-                           err_putc(' ');
-                           err_gotoxy(19,0);
-                           err_putc('+');
-                           
-                        }
-                     }
-                     
-                     
-                     lcd_gotoxy(16,0);
-                     lcd_putc('+');
-                     
-                     lcd_putint2(DCF77daten[1]);
-                     //lcd_putc(':');
-                     //lcd_putint2(DCF77daten[0]);
-                     
-                     
-#pragma mark Synchronisation
-                     
-                     
-                     // Synchronisation
-                     
-                     
-                     //sync start
-                     // alle 60 Min: Warten starten
-                     if ((((min/30)&&(min%30==0)&&(std<23))||(uhrstatus & (1<<SYNC_NULL)))&& (!(uhrstatus & (1<<SYNC_WAIT))))
-                     {
-                         {
-                           uhrstatus &= ~(1<<SYNC_OK);
-                           uhrstatus |= (1<<SYNC_WAIT); // Beginn Sync, Warten starten
-                           DCF77_counter=0; // Zaehler fuer korrekte Daten
-                           
-                           err_gotoxy(4,0);
-                           err_puts("            \0");
-                           
-                           lcd_clr_line(1);
-                           lcd_puts("S  ");
-                           lcd_puts(" WAIT");
-                        }
-                        
-                     }
-                     
-                     
-                     if (uhrstatus & (1<<SYNC_WAIT)) // Warten auf genuegende Anzahl korrekter Daten
-                     {
-                        //uint8_t newminute=0;
-                        uint8_t DCF77_erfolg = UhrAbrufen(); // DCF-Uhr abrufen
-                        if (DCF77_erfolg) // Fehler
-                        {
-                           lcd_gotoxy(16, 1);
-                           err_puts("DCF\0");
-                           err_putc('!');
-                           DCF77_counter=0; // zurueck auf Feld 1. Uhr hat einen Fehler, Synchronisation neu starten
-                        }
-                        else // Wert ist OK
-                        {
-                           lcd_gotoxy(16, 1);
-                           lcd_putc('+');
-                           lcd_putint2(DCF77daten[0]);         // Minuten
-                           // erste Synchronisation?
-                           if (uhrstatus & (1<<SYNC_NULL))     // Nach reset, noch keine oldmin ...
-                           {
-                              // startwerte setzen
-                              oldmin=DCF77daten[0];
-                              oldstd=DCF77daten[1];
-                              oldtag=DCF77daten[2];
-                              uhrstatus &= ~(1<<SYNC_NULL);
-                              uhrstatus |= (1<<SYNC_NEW);         // TWI soll noch keine Daten uebertragen
-                           }
-                           else if (!(oldmin == DCF77daten[0]))   // minute hat sich geaendert
-                           {
-                              //lcd_gotoxy(0,1);
-                              //lcd_puts("       \0");
-                              
-                              lcd_gotoxy(1,1);
-                              lcd_putc('1');                      // Anzeige, dass Synch laeuft
-                              
-                              // Kontrolle, ob Daten korrekt
-                              
-                              if ((oldstd==DCF77daten[1])&&(oldtag==DCF77daten[2])) // stunde und tag sind noch gleich
-                              {
-                                 lcd_gotoxy(1,1);
-                                 lcd_putc('2');
-                                 if ( DCF77daten[0]==(oldmin+1)) // naechste minute, Aenderung korrekt
-                                 {
-                                    lcd_gotoxy(1,1);
-                                    lcd_putc('3');
-                                    
-                                    DCF77_counter++;
-                                    
-                                     
-                                    lcd_putint1(DCF77_counter);
-                                    oldmin=DCF77daten[0];
-                                    if (DCF77_counter >= MIN_SYNC) // genuegende Anzahl korrekte Daten
-                                    {
-                                       lcd_gotoxy(1,1);
-                                       lcd_putc('4');
-                                       lcd_putc(' ');
-                                       DCF77_counter =0;
-                                       uhrstatus |= (1<<SYNC_READY); // Synchronisation ausloesen
-                                       uhrstatus &= ~(1<<SYNC_WAIT); // WAIT zuruecksetzen
-                                    }
-                                 }
-                                 else // fehler
-                                 {
-                                    DCF77_counter =0;                // Counter zuruecksetzen
-                                    
-                                    oldmin=DCF77daten[0];
-                                    oldstd=DCF77daten[1];
-                                    oldtag=DCF77daten[2];
-                                    
-                                 }
-                                 
-                              } //if (oldstd==DCF77daten[1])&&(oldtag=DCF77daten[2])
-                              else // fehler
-                              {
-                                 DCF77_counter =0;
-                                 oldmin=DCF77daten[0];
-                                 oldstd=DCF77daten[1];
-                                 oldtag=DCF77daten[2];
-                                 
-                              }
-                              
-                           }
-                        } // end DCF77erfolg=0
-                        
-                     } // end (uhrstatus & (1<<SYNC_WAIT)
-                     
-                     // TODO: Bei fehlgeschlagener Synchronisation Uhr unverŠndert lassen. Eventuell mit ODER SYNC_READY und SYNC_NEW und SYNC_OK
-                     
-                     if (uhrstatus & (1<<SYNC_READY)) // Uhr ist wieder bereit
-                     {
-                        uint8_t res=0;
-                        res=rtc_write_Zeit(DCF77daten[1], DCF77daten[0],0); // stunde, minute, sekunde
-                        
-                        res=rtc_write_Datum(DCF77daten[5], DCF77daten[2], DCF77daten[3],DCF77daten[4]);
-                        uhrstatus &= ~(1<<SYNC_READY);
-                        uhrstatus |= (1<<SYNC_OK);
-                        uhrstatus &= ~(1<<SYNC_NEW);                 // TWI soll jetzt Daten senden
-                        
-                        lcd_gotoxy(0,1);
-                        lcd_puts("S:\0");
-                        if (res)
-                        {
-                           lcd_puts("SYNC\0");
-                           lcd_puts("err:\0");
-                           lcd_puthex(res);
-                        }
-                        else
-                        {
-                           
-                           lcd_putint2(DCF77daten[1]);
-                           lcd_putc(':');
-                           lcd_putint2(DCF77daten[0]);
-                           lcd_putc(':');
-                           lcd_putint1(DCF77daten[5]-1);
-                           lcd_puts(" SYNC +");
-                        }
-                        lcd_gotoxy(16, 1);
-                        lcd_puts("   \0");
-                        
-                        uint8_t RTC_erfolg = RTC_Abrufen();
-                        if (RTC_erfolg)                           // Fehler, aussteigen
-                        {
-                           SchreibStatus=0;
-                           LeseStatus=0;
-                           err_gotoxy(12,0);
-                           err_puts("RTC\0");
-                           //err_putc(' ');
-                           err_puthex(RTC_erfolg);
-                           err_putc('!');
-                           
-                           outbuffer[6] = RTC_erfolg;
-                           // aktuelle Schlaufe verlassen
-                        }
-                        else
-                        {
-                           err_gotoxy(12,2);
-                           err_puts("RTC OK\0");
-                           err_gotoxy(0,2);
-                           err_putint2(RTCdaten[1]);
-                           err_putc(':');
-                           err_putint2(RTCdaten[0]);
-                        }
-                        
-                     }
-                     // Ende Synchronisation
                   } // if NOT test
 						
                   
@@ -2733,17 +2338,7 @@ int main (void)
                   // ++++++++++++++++++++++++++++++++
                   // End NOT TEST
                   // ++++++++++++++++++++++++++++++++						
-                  err_gotoxy(0,3);
-                  err_putc('R');
-                  err_putint2(RTCdaten[1]);
-                  err_putc(':');
-                  err_putint2(RTCdaten[0]);
-                  err_putc(' ');
-                  err_putc('D');
-                  err_putint2(DCF77daten[1]);
-                  err_putc(':');
-                  err_putint2(DCF77daten[0]);
-
+  
 						readSR();				// Liste der abzufragenden Slaves lesen
 						
 						// Nur abfragen, wenn TWI laeuft
@@ -2751,6 +2346,9 @@ int main (void)
 						{
 							LeseStatus=Read_Device;
 							SchreibStatus=Write_Device;
+                     
+                     LeseStatus |= (1<<OG2);
+                     SchreibStatus |= (1<<OG2);
 						}
 						else 
 						{
@@ -2758,7 +2356,7 @@ int main (void)
 							LeseStatus=0;
 						}
                   
-                  LeseStatus |= (1<<OG2);
+                  
                   
                   outbuffer[43] = LeseStatus;
                   outbuffer[44] = SchreibStatus;
@@ -2831,29 +2429,6 @@ int main (void)
 								//err_putc('U');
 								
 								wdt_reset();
-								//twi_Reply_count0++; // Call ist OK
-								//lcd_clr_part(0,12,19);
-								//lcd_gotoxy(12,0);
-								//lcd_gotoxy(15,0);
-								//lcd_put_zeit(DCF77daten[0],DCF77daten[1]);
-								
-								min= RTCdaten[0];
-								std= RTCdaten[1];
-								tag= RTCdaten[2];
-								
-								lcd_gotoxy(10,0);
-								lcd_putint2(std);
-                        lcd_putc(':');
-                        lcd_putint2(min);
-								/*								
-								 min= DCF77daten[0];
-								 std= DCF77daten[1];
-								 tag= DCF77daten[5];
-								 lcd_gotoxy(17,0);
-								 lcd_putint2(min);
-								 */								
-								//uint8_t StundenCode=0;
-								
 								//	Brennerlaufzeit addieren
 								if ((min > Zeit.minute) || ((min ==0)&&(std==0)) || (std> Zeit.stunde) ) //neue Minute oder neue Stunde oder neuer Tag
 								{
@@ -2878,16 +2453,7 @@ int main (void)
 										oldstd=RTCdaten[1];
 										oldtag=RTCdaten[2];
 									}
-									/*
-									 Zeit.minute = DCF77daten[0];
-									 Zeit.stunde = DCF77daten[1];
-									 Zeit.kalendertag = DCF77daten[2];
-									 Zeit.kalendermonat = DCF77daten[3];
-									 Zeit.kalenderjahr = DCF77daten[4];
-									 Zeit.wochentag = DCF77daten[5]-1;// DCF77 ist 1-basiert ab Sonntag
-									 */
-									
-									synchfehler=DCF77daten[6];
+										
 									//outbuffer[29]=DCF77daten[6];
 									
 									neueZeit=1; //	Zeit in RŠumen aktualisieren
@@ -2897,44 +2463,7 @@ int main (void)
 										AnzeigeWochentag=Zeit.wochentag;
 										
 									}
-									
-									/*
-									 lcd_clr_part(0,0,14);
-									 if (Zeit.wochentag < 8)
-									 {
-									 lcd_put_wochentag(Zeit.wochentag);
-									 }
-									 lcd_putc(' ');
-									 if (Zeit.kalendertag < 32)
-									 {
-									 lcd_putint2(Zeit.kalendertag);
-									 }
-									 lcd_putc('.');
-									 if (Zeit.kalendermonat < 13)
-									 {
-									 lcd_putint2(Zeit.kalendermonat);
-									 }
-									 lcd_putc('.');
-									 if (Zeit.kalenderjahr<99)
-									 {
-									 lcd_putint2(Zeit.kalenderjahr);
-									 }
-									 //lcd_gotoxy(15,1);
-									 //lcd_put_zeit(Zeit.minute,Zeit.stunde);
-									 */
-									
-									
-									
-									// Uhr-Fehler anzeigen
-									// err_clr_part(0,13,19);
-									// err_puts("S \0");
-									// err_putint(synchfehler);
-									
-									//err_gotoxy(14,0);
-									//err_puts("w \0");
-									//err_puthex(tempWDT_Count);
-									
-								} //Zeit vorwaertsstellen
+									} //Zeit vorwaertsstellen
 								wdt_reset();
 								// end Uhr lesen
 								
@@ -4557,14 +4086,7 @@ int main (void)
 								
 							} // DCF77-erfolg==0
 							
-							//	Kontrolle: Labor schreiben: Schalter ein-aus nach jeder Minute
-							//if (DCF77daten[0]!=LaborDaten[8])//letzter Minutenwert war anders
-							{
-								//					LaborDaten[0]=DCF77daten[0]% 2;		// ON bei geraden Minuten
-								//					LaborDaten[1]=DCF77daten[0]% 2+1;	// OFF bei ungeraden Minuten
-								//					LaborDaten[8]= DCF77daten[0];
-							}
-							
+								
 							if ((Menu_Ebene & 0xF0)>0)	//	Anzeigen wenn Menu_Ebene >0 
 							{
 								//err_gotoxy(10,0);
@@ -4802,72 +4324,6 @@ int main (void)
 		
 		wdt_reset();
 	
-      /*
-		// TWI mit Taste toggeln
-		if (!(PINB & (1<<PORTB0))) // Taste 0 TWI Ein/Aus
-		{
-			//err_gotoxy(12,0);
-			//err_puts("P0 Down\0");
-			//wdt_reset();
-			if (! (TastenStatus & (1<<PORTB0))) //Taste 0 war nicht nicht gedrueckt
-			{
-				TastenStatus |= (1<<PORTB0);
-				Tastencount=0;
-				//err_gotoxy(8,0);
-				//err_puts("P0 \0");
-				//lcd_putint(TastenStatus);
-				//delay_ms(800);
-			}
-			else
-			{
-				
-				
-				Tastencount ++;
-				//lcd_gotoxy(7,1);
-				//lcd_puts("TC \0");
-				//lcd_putint(Tastencount);
-				wdt_reset();
-				if (Tastencount >= Tastenprellen)
-				{
-					err_gotoxy(8,0);
-					err_puts("P0\0");
-					//err_putint(Tastencount);
-					err_putc(' ');
-					err_puthex(BUS_Status);
-					//err_putc('v');
-					
-					if (BUS_Status & (1<<TWI_CONTROLBIT)) //  TWI ist gesetzt > loeschen
-					{
-						//err_putc('1');
-						//BUS_Status |= (1<<2); // WEB request
-						
-						//BUS_Status &= ~(1<<3); // TWI wird OFF, Bit 1 auf L setzen
-						BUS_Status &= ~(1<<TWI_CONTROLBIT);
-						LeseStatus=0;
-						SchreibStatus=0;
-						PORTC &= ~(1<<TWI_CONTROLPIN); // TWI-LED OFF
-						
-						//web_request &= ~(1<<7);
-						//err_putc('n');
-						//err_puthex(BUS_Status);
-					}
-					else
-					{
-						
-						BUS_Status |= (1<<TWI_CONTROLBIT);
-						PORTC |= (1<<TWI_CONTROLPIN); // TWI-LED ON
-						
-					}
-					
-					
-					Tastencount=0;
-					TastenStatus &= ~(1<<PORTB0);
-					
-				}
-			}//else
-			
-		}
-		*/
 		wdt_reset();
 		
 		if (!(PINB & (1<<PB1))) // Taste 1
@@ -4908,41 +4364,6 @@ int main (void)
 		} // Taste 1
 		
 		
-		/* ************************* 
-		 */
-		
-		// 3.12.		WEB_Status |= (1<<0);
-		/* ************************* 
-		 */
-		/*
-		 wdt_reset();
-		 if (startdelay==STARTDELAY-1)
-		 {
-		 
-		 lcd_gotoxy(18,3); 
-		 lcd_putc('7');
-		 
-		 //delay_ms(300);
-		 lcd_gotoxy(18,3); 
-		 lcd_putc(' ');
-		 
-		 }
-		 
-		 if (startdelay==STARTDELAY)
-		 {
-		 lcd_gotoxy(17,3); 
-		 lcd_putc('G');	//	Punkt 
-		 err_gotoxy(17,1); 
-		 err_putc('G');	//	Punkt 
-		 
-		 delay_ms(300);
-		 }
-		 */
-		//err_gotoxy(16,1);
-		//err_puts("I\0");
-		//err_puthex(WEB_Status);
-		//err_puts("T\0");
-		//err_puthex(TWI_Status);
 		
 		uint8_t dataerfolg=0;
 		
@@ -4983,568 +4404,7 @@ int main (void)
 			
 			
 			
-#pragma mark Tasten 
 			
-			
-			
-		/*
-			Tastenwert=0;
-			initADC(tastatur_kanal);
-			//err_gotoxy(10,1);
-			//err_puts("TR \0");
-			
-			Tastenwert=(uint8_t)(readKanal(tastatur_kanal)>>2);
-			*/
-         Tastenwert=0;
-			//err_puthex(Tastenwert);
-			
-			//			closeADC();
-			
-			//uint8_t Taste=-1;
-			//		Tastenwert/=8;
-			//		Tastenwert*=3;
-			//		err_clr_line(1);
-			//		err_gotoxy(0,1);
-			//		err_puts("Taste \0");
-			//		err_putint(Taste);
-			//		delay_ms(200);
-			
-			
-			
-			if (Tastenwert>23) // ca Minimalwert der Matrix
-			{
-				//			wdt_reset();
-				/*
-				 0: Wochenplaninit
-				 1: IOW 8* 2 Bytes auf Bus laden
-				 2: Menu der aktuellen Ebene nach oben
-				 3: IOW 2 Bytes vom Bus in Reg laden
-				 4: Auf aktueller Ebene nach rechts (Heizung: Vortag lesen und anzeigen)									
-				 5: Ebene tiefer
-				 6: Auf aktueller Ebene nach links (Heizung: Folgetag lesen und anzeigen)									
-				 7: 
-				 8: Menu der aktuellen Ebene nach unten
-				 9: DCF77 lesen
-				 
-				 12: Ebene hšher
-				 */
-				TastaturCount++;
-				if (TastaturCount>=8)	//	Prellen
-				{
-					
-					//err_clr_line(1);
-					//err_gotoxy(0,1);
-					//err_puts("ADC:\0");
-					//err_putint(Tastenwert);
-					
-					Taste=Tastenwahl(Tastenwert);
-					
-					//err_gotoxy(12,1);
-					//err_puts("T:\0");
-					//err_gotoxy(14,1);
-					//err_putint2(Taste);
-					/*
-					 err_putint2(Taste);
-					 //delay_ms(1200);
-					 //err_clr_line(1);
-					 */
-					TastaturCount=0;
-					Tastenwert=0x00;
-					//				uint8_t i=0;
-					
-					//			uint8_t inByte0=0;
-					//			uint8_t inByte1=0;
-					
-					uint8_t inBytes[4]={};
-					//			uint8_t pos=0;
-					//			lcd_gotoxy(12,0);
-					//			lcd_put_wochentag(DCF77buffer[5]);
-					//			lcd_gotoxy(15,0);
-					//			lcd_put_zeit(DCF77buffer[0],DCF77buffer[1]);
-					
-					//			Taste=0xff;
-					
-					
-					//Taste=4;
-					
-					switch (Taste)
-					{
-						case 0://WochenplanInit
-						{ 
-							break;
-							// Blinken auf C2
-							
-						}
-							break;
-							
-							
-						case 1:
-						{
-							//
-						}
-							break;
-							
-						case 2:											//	Menu vorwaertsschalten	
-						{
-							lcd_cls();
-							/*
-							 err_gotoxy(0,1);
-							 err_puts("M:\0");
-							 err_putint2(Menu_Ebene & 0xF0);
-							 err_gotoxy(10,1);
-							 err_puts("T:\0");
-							 err_putint2(Taste);
-							 //					delay_ms(1000);
-							 */
-							switch (Menu_Ebene & 0xF0)					//	Bits 7-4, Menu_Ebene
-							{
-								case 0x00:								//	oberste Ebene, Raeume
-								{
-									//	(Raum_Thema & 0xF0): Bit 7-4, Pos in Raum-Liste
-									if ((Raum_Thema & 0xF0)<0x70)	//	Ende der Raum-Liste noch nicht erreicht
-										
-									{
-										Raum_Thema += 0x10;			//	Naechster Raum
-									}
-									else
-									{
-										lcd_gotoxy(14,0);
-										lcd_puts(">>\0");				//Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-									}
-									//err_cls();
-									//err_gotoxy(10,1);
-									//err_puts("Main:\0");
-									//err_puthex(Raum_Thema);
-									//							delay_ms(800);
-									//lcd_cls();	
-									/*
-									 lcd_clr_line(0);
-									 lcd_gotoxy(0,0);
-									 //	RaumTable: Namen der RŠume
-									 strcpy_P(titelbuffer, (PGM_P)pgm_read_word(&(RaumTable[Raum_Thema>>4])));//Bit 7 - 4
-									 //	Raum anzeigen:
-									 lcd_puts(titelbuffer);
-									 delay_ms(1800);
-									 */
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);			//Anzeige aktualisieren
-									
-								}
-									break;
-									
-								case 0x10:								// erste Unterebene, Thema
-								{
-									if ((Raum_Thema & 0x0F)<0x07)	//	(Raum_Thema & 0x0F): Bit 3-0, Pos in Themen-Liste
-									{
-										
-										Raum_Thema += 0x01;			//naechstes Thema
-									}
-									else
-									{
-										lcd_gotoxy(13,0);
-										lcd_puts(">>\0");				// Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-									}
-									
-									//lcd_gotoxy(9,0);
-									//lcd_puthex(Raum_Thema);
-									//lcd_gotoxy(12,0);
-									//lcd_puthex(Menu_Ebene);
-									
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde),Menu_Ebene);			//Anzeige aktualisieren
-									
-								}
-									break;
-								case 	0x20:								// zweite Unterebene
-								{
-									
-								}break;
-							}//switch Menu_Ebene
-							
-						}
-							break;
-							
-						case 3:	//
-						{
-						
-						}break;
-							
-						case 4:	// Vortag
-						{
-							
-							//err_clr_line(0);
-							//err_gotoxy(0,0);
-							//err_puts("Taste 4\0");
-							//delay_ms(50);
-							//err_clr_line(0);
-							
-							
-							switch (Menu_Ebene & 0xF0)//Bits 7-4	
-							{
-								case 0x00:	//oberste Ebene
-								{
-									//err_clr_line(0);
-									//err_puts("E0\0");
-									
-								}break;
-									
-								case 0x10: // erste Ebene
-								{
-									
-									
-								}break;
-									
-								case 0x20: // zweite Ebene, Plan
-								{
-									err_clr_line(0);
-									err_puts("T4 E2 \0");
-									err_puthex(Raum_Thema);
-									err_putc(' ');
-									if ((Raum_Thema & 0x0F)==0x00)	//Plan
-									{	
-										//err_puts(" Plan\0");
-										if (AnzeigeWochentag & 0x0F)	//	Nicht Montag
-										{
-											AnzeigeWochentag -= 0x01;	//VorTag
-										}
-										else
-										{
-											lcd_gotoxy(3,0);
-											lcd_puts("Es ist schon MO!\0");
-											delay_ms(400);
-											
-										}
-										
-										//err_clr_line(1);
-										
-										//err_puts("Tag:\0");
-										//err_putint(AnzeigeWochentag & 0x0F);
-										displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-										
-										//uint8_t tagblock[buffer_size];
-										//uint8_t taglesenerfolg=TagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock, 0, (AnzeigeWochentag));
-										//TagZeigen(tagblock,(Menu_Ebene & 0x0F));
-										//delay_ms(800);
-									}	// if Plan
-									else
-									{
-										
-									}
-									err_putint1(AnzeigeWochentag);
-									delay_ms(800);
-								}break;	//	case 0x20
-									
-									
-							}//switch Menu_Ebene & 0xF0
-							
-						} break; // case Vortag
-							
-							
-						case 5:								// Ebene tiefer
-						{
-							//Taste=99;
-							lcd_clr_line(1);
-							//lcd_gotoxy(0,1);
-							//lcd_puts("Taste 5\0");
-							//delay_ms(200);
-							//lcd_clr_line(1);
-							//err_gotoxy(3,0);
-							//err_puthex(DCF77daten[5]);
-							Raum_Thema &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-							Menu_Ebene &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-							if ((Menu_Ebene & 0xF0)<0x20)
-							{
-								switch (Menu_Ebene & 0xF0)
-								{
-									case 0x00: // erste Ebene, Thema
-									{
-										Menu_Ebene = 0x10;
-										AnzeigeWochentag=(Zeit.wochentag) & 0x0F; 
-									}break;
-										
-									case 0x10:
-									{
-										Menu_Ebene = 0x20;
-										lcd_CGRAMInit_A();							//	Zeichen fuer Wochenplan setzen
-										//Objekt_Wochentag =0x00;						//	Objekt 0 seetzen
-										//Objekt_Wochentag = ((DCF77daten[5]) & 0x0F);		//	Wochentag setzen								//Objekt_Wochentag = 0x06;
-										//err_gotoxy(5,0);
-										//delay_ms(200);
-										Objekt_Wochentag = ((Zeit.wochentag) & 0x0F);		//	Wochentag setzen								//Objekt_Wochentag = 0x06;
-										lcd_cls();
-										
-									}break;
-										
-										
-										
-										
-								}//switch Menu_Ebene
-								
-								
-								
-								
-								//Raum_Thema &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-								//Menu_Ebene &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-								
-								/*
-								 lcd_clr_line(0);
-								 lcd_clr_line(1);
-								 lcd_clr_line(2);
-								 lcd_clr_line(3);
-								 
-								 lcd_gotoxy(0,0);
-								 strcpy_P(titelbuffer, (PGM_P)pgm_read_word(&(RaumTable[(Raum_Thema>>4)])));
-								 lcd_puts(titelbuffer);
-								 
-								 lcd_gotoxy(12,0);
-								 lcd_put_wochentag(DCF77buffer[5]);
-								 lcd_gotoxy(15,0);
-								 lcd_put_zeit(DCF77buffer[0],DCF77buffer[1]);
-								 
-								 
-								 //lcd_gotoxy(9,0);
-								 //lcd_puthex(Raum_Thema);
-								 
-								 //lcd_gotoxy(12,0);
-								 //lcd_puthex(Menu_Ebene);
-								 
-								 //uint16_t aadr=(uint16_t)MenuTable[Raum_Thema>>4];// Bit 7-4
-								 //lcd_gotoxy(0,1);
-								 //lcd_puthex(Raum_Thema>>4);
-								 //lcd_gotoxy(3,1);
-								 //lcd_putint(adr);
-								 */
-								
-								displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-								
-								/*
-								 uint8_t adr=8*(Raum_Thema>>4)+(Raum_Thema & 0x0F); // Page: Bits 7-4 Zeile: Bits 3-0
-								 strcpy_P(menubuffer, (PGM_P)pgm_read_word(&(P_MenuTable[adr])));//Bit 3 - 0	Untermenu im PROGMEM
-								 //lcd_clr_line(1);
-								 lcd_gotoxy(0,1);
-								 //lcd_puthex((uint8_t)&adr);
-								 lcd_puts(menubuffer);
-								 */	
-								
-							}
-						}				break;
-							
-						case 6: // Folgetag
-						{
-							/*
-							 err_clr_line(1);
-							 err_gotoxy(0,1);
-							 err_puts("Taste 6\0");
-							 delay_ms(50);
-							 err_clr_line(1);
-							 */
-							
-							switch (Menu_Ebene & 0xF0)//Bits 7-4	
-							{
-								case 0x00:	//oberste Ebene
-									
-									err_clr_line(0);
-									err_puts("E0\0");
-									
-									break;
-									
-								case 0x10: // erste Ebene
-								{
-									
-									
-								}break;
-									
-								case 0x20: // zweite Ebene, Plan
-								{
-									
-									err_clr_line(0);
-									err_puts("T6 E2 \0");
-									err_puthex(Raum_Thema);
-									err_putc(' ');
-									if ((Raum_Thema & 0x0F)==0x00)	//Plan
-									{
-										//err_puts(" Plan\0");
-										if ((AnzeigeWochentag & 0x0F)< 6)	//	Nicht Sonntag
-										{
-											AnzeigeWochentag += 0x01;	//naechster Tag
-										}
-										else
-										{
-											lcd_gotoxy(3,0);
-											lcd_puts("Es ist schon SO!\0");
-											delay_ms(400);
-											
-										}
-										//err_putint1(AnzeigeWochentag);
-										//delay_ms(800);
-										
-										err_clr_line(1);
-										err_puts("Tag:\0");
-										err_putint(AnzeigeWochentag & 0x0F);
-										displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-										
-										//uint8_t tagblock[buffer_size];
-										//uint8_t taglesenerfolg=TagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock, 0, (Menu_Ebene & 0x0F));
-										//TagZeigen(tagblock,(Menu_Ebene & 0x0F));
-									}	// if Plan
-									else
-									{
-										
-									}
-									
-								}break;	// case 0x20
-									
-							} // Menu_Ebene & 0xF0
-							
-						} break; // case Folgetag
-							
-							//case 7:
-							
-							//	break;
-							
-							
-						case 8:												//Menu rueckwaertsschalten
-						{
-							//err_gotoxy(0,1);
-							//err_puts("M:\0");
-							//err_putint2(Menu_Ebene & 0xF0);
-							//err_gotoxy(10,1);
-							//err_puts("T:\0");
-							//err_putint2(Taste);
-							//delay_ms(1000);
-							
-							switch (Menu_Ebene & 0xF0)//Bits 7-4				oberste Ebene, Raeume
-							{
-								case 0x00:
-								{
-									
-									//					lcd_gotoxy(12,0);
-									//					lcd_puthex(Raum_Thema);
-									//delay_ms(800);
-									//					pos=Raum_Thema;
-									//					pos>>4;
-									
-									if ((Raum_Thema & 0xF0)>0)
-									{
-										
-										Raum_Thema -= 0x10;				//vorheriges Thema
-									}
-									else
-									{
-										lcd_gotoxy(14,0);
-										lcd_puts("<<\0");					//Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-										
-									}
-									//lcd_gotoxy(9,0);
-									//lcd_puthex(Raum_Thema);
-									
-									//lcd_gotoxy(12,0);
-									//lcd_puthex(Menu_Ebene);
-									//							lcd_cls();	
-									/*
-									 lcd_gotoxy(0,0);
-									 lcd_clr_line(0);
-									 //	RaumTable: Namen der RŠume
-									 strcpy_P(titelbuffer, (PGM_P)pgm_read_word(&(RaumTable[Raum_Thema>>4])));//Bit 7 - 4
-									 //	Raum anzeigen:
-									 lcd_puts(titelbuffer);
-									 */						
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);			//Anzeige aktualisieren
-								}
-									break;
-									
-								case 0x10:									// erste Unterebene, Thema
-								{
-									if ((Raum_Thema & 0x0F)>0x00)
-									{								
-										Raum_Thema -= 0x01;				//vorhergehendes Thema
-									}
-									else
-									{
-										lcd_gotoxy(14,0);
-										lcd_puts(">>\0");					// Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-									}
-									
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);				//Anzeige aktualisieren
-									
-								}
-									break;
-									
-							}// switch Menu_Ebene
-							
-						}
-							break;
-							
-							//case 9:
-							
-							
-							//	break;
-							
-							
-						case 12:// Ebene hoeher
-						{
-							//Taste=99;
-							
-							//lcd_clr_line(1);
-							//lcd_gotoxy(0,1);
-							//lcd_puts("Taste 12\0");
-							//delay_ms(100);
-							//lcd_clr_line(1);
-							switch (Menu_Ebene & 0xF0)
-							{
-								case 0x00:
-								{
-									
-								}break;
-									
-								case 0x10:
-								{
-									Menu_Ebene = 0x00;							//Ebene 0
-									//Menu_Ebene += (DCF77daten[5] & 0x0F);		//	Wochentag setzen
-									Raum_Thema &=0xF0;
-									AnzeigeWochentag=(Zeit.wochentag) & 0x0F;
-									lcd_CGRAMInit_Titel();	//	Zeichen fuer Titel setzen
-									lcd_cls();
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-									
-									
-								}break;
-								case 0x20:
-								{
-									Menu_Ebene = 0x10;							//	Ebene 1
-									Menu_Ebene &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-									//Menu_Ebene += (DCF77daten[5] & 0x0F);		//	Wochentag setzen
-									Raum_Thema &=0xF0;
-									AnzeigeWochentag=(Zeit.wochentag) & 0x0F;
-									lcd_CGRAMInit_Titel();	//	Zeichen fuer Titel setzen
-									lcd_cls();
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde>>4), Menu_Ebene);	//	Anzeige aktualisieren
-									
-									
-								}break;
-									
-									
-							}//switch MenuEbene
-							
-							
-						}break;
-							
-							
-					}//switch Taste
-					
-				}
-				//TastaturCount=0x00;
-			}
 			
 		}								// end kein WEB-Request
 		

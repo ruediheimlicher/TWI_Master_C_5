@@ -94,8 +94,6 @@
 
 
 /*Der Buffer fuer die Daten der DCF-Uhr.*/
-//volatile uint8_t DCF77daten[buffer_size];//
-uint8_t DCF77daten[buffer_size];//
 
 /*Der Buffer fuer die Daten der RTC.*/
 volatile uint8_t RTCdaten[buffer_size];//
@@ -167,7 +165,6 @@ uint8_t daySettingLesen(uint8_t wochentag, uint8_t raum, uint8_t data[]);
 
 
 /*Der Buffer fuer die Daten der DCF-Uhr.*/
-//volatile uint8_t DCF77daten[buffer_size];//
 
 
 uint8_t TagSchreiben(unsigned char ADRESSE, uint8_t Daten[], uint8_t Tag);

@@ -13,7 +13,6 @@
 
 //#define EEPROM_WOCHENPLAN_ADRESSE 0xA0; //in TWI-Maser ebenfall definiert
 //extern volatile uint8_t DCF77daten[];
-extern uint8_t DCF77daten[];
 
 //extern volatile uint8_t DCF77daten[];
 
@@ -172,22 +171,7 @@ void displayRaum(const uint8_t RaumThema, const uint8_t ObjektWochentag, const u
 						
 					case 0x20://	ObjektWochentag
 					{
-						/*
-						 err_clr_line(1);
-						 err_puts("DCF77buf:\0");
-						 err_gotoxy(10,1);
-						 err_putint2(DCF77daten[1]);
-						 err_gotoxy(13,1);
-						 err_putint2(DCF77daten[0]);
-						 err_gotoxy(16,1);
-						 err_putint2(DCF77daten[5]);
-						 delay_ms(1800);
-						 */
-						//lcd_clr_line(2);
-						//lcd_puts("Tag:\0");
-						//lcd_putint1(DCF77daten[5]);
-						//lcd_puts("TgPlan:\0");
-						lcd_clr_line(1);
+							lcd_clr_line(1);
 						lcd_puts(menubuffer);
 						lcd_clr_line(3);
 						lcd_gotoxy(0,3);
@@ -336,22 +320,7 @@ void displayRaum(const uint8_t RaumThema, const uint8_t ObjektWochentag, const u
 						
 					case 0x20://	ObjektWochentag
 					{
-						/*
-						 err_clr_line(1);
-						 err_puts("DCF77buf:\0");
-						 err_gotoxy(10,1);
-						 err_putint2(DCF77daten[1]);
-						 err_gotoxy(13,1);
-						 err_putint2(DCF77daten[0]);
-						 err_gotoxy(16,1);
-						 err_putint2(DCF77daten[5]);
-						 delay_ms(1800);
-						 */
-						//lcd_clr_line(2);
-						//lcd_puts("Tag:\0");
-						//lcd_putint1(DCF77daten[5]);
-						//lcd_puts("TgPlan:\0");
-						lcd_clr_line(1);
+							lcd_clr_line(1);
 						lcd_puts(menubuffer);
 						lcd_clr_line(3);
 						lcd_gotoxy(0,3);
@@ -545,99 +514,6 @@ void displayRaum(const uint8_t RaumThema, const uint8_t ObjektWochentag, const u
 		//		err_puts("   \0");
 		
 	}	// if MenuEbene
-	else
-	{
-		lcd_CGRAMInit_Titel();
-		//		lcd_clr_line(0);
-		//		lcd_put_wochentag(Wochentag);
-		
-		//err_clr_line(0);
-		//err_putint2(Zeit.wochentag);
-		//err_putint2(Zeit.stunde);
-		//err_putint2(Zeit.minute);
-		//delay_ms(600);
-		
-		//lcd_put_zeit(DCF77daten[0],DCF77daten[1]);
-		lcd_clr_part(0,0,14);
-		lcd_put_wochentag(Zeit.wochentag);
-		lcd_putc(' ');
-		lcd_putint2(Zeit.kalendertag);
-		lcd_putc('.');
-		lcd_putint2(Zeit.kalendermonat);
-		lcd_putc('.');
-		lcd_putint2(Zeit.kalenderjahr);
-		lcd_gotoxy(15,0);
-		lcd_put_zeit(Zeit.minute,Zeit.stunde);
-		lcd_clr_line(3);
-		lcd_clr_line(2);
-		lcd_clr_line(1);
-		
-		lcd_gotoxy(1,1);
-		lcd_putc(2);	//	Ecke links oben
-		
-		//	Obere Linie
-		
-		//
-		for (i=0;i<7;i++)
-		{
-			lcd_putc(0xB0);	//Linie mitte
-		}
-		
-		if ((RaumThema & 0xF0)==0x70)	//Ende der Liste
-		{
-			lcd_putc(0xB0);	//Linie mitte
-		}
-		else
-		{
-			lcd_putc(7);	//Pfeil nach oben
-		}
-		for (i=0;i<8;i++)
-		{
-			lcd_putc(0xB0);	//Linie mitte
-		}
-		//
-		
-		
-		lcd_putc(5);	//	Ecke rechts oben
-		uint8_t l=strlen(titelbuffer);
-		lcd_gotoxy(1,2);
-		//lcd_puts("+++ \0");
-		lcd_putc(0x7C);
-		//		lcd_putc(1);
-		lcd_gotoxy(10-l/2-1,2);
-		lcd_puts(titelbuffer);
-		lcd_gotoxy(18,2);
-		lcd_putc(0x7C);
-		
-		lcd_gotoxy(1,3);
-		lcd_putc(3);	//	Ecke links oben
-		
-		// Untere Linie
-		
-		//
-		for (i=0;i<7;i++)
-		{
-			lcd_putc(0xB0);	//Linie mitte
-		}
-		
-		if (RaumThema & 0xF0)
-		{
-			lcd_putc(8);	//Nicht erster Raum, Pfeil nach unten
-		}
-		else
-		{
-			lcd_putc(0xB0);	//Erster Raum, Linie mitte
-		}
-		for (i=0;i<8;i++)
-		{
-			lcd_putc(0xB0);	//Linie mitte
-		}
-		//
-		
-		lcd_putc(6);	//	Ecke rechts oben
-		
-		//lcd_puts("+++\0");
-		//		lcd_clr_line(1);
-		//		lcd_puts(menubuffer);
-	}
+
+	
 }
