@@ -4,7 +4,7 @@ TWI_Master.o: TWI_Master.c \
  /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/inttypes.h \
  /usr/local/Cellar/avr-gcc@9/9.3.0_3/lib/avr-gcc/9/gcc/avr/9.3.0/include/stdint.h \
  /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/stdint.h \
- /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/iom644p.h \
+ /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/iom324.h \
  /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/iomxx4.h \
  /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/portpins.h \
  /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/common.h \
@@ -38,7 +38,7 @@ TWI_Master.o: TWI_Master.c \
 
 /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/stdint.h:
 
-/usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/iom644p.h:
+/usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/iom324.h:
 
 /usr/local/Cellar/avr-gcc@9/9.3.0_3/avr/include/avr/iomxx4.h:
 

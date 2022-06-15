@@ -1357,14 +1357,14 @@ int main (void)
 	// Zeichensatz laden
 	lcd_CGRAMInit_Titel();
 	
-	delay_ms(50);
+	delay_ms(100);
 	lcd_puts("Guten Tag\0");
 	delay_ms(800);
 	lcd_cls();
 	lcd_puts("Master ready\0");
-	
+   delay_ms(100);
 	err_initialize(ERR_FUNCTION_8x2, ERR_CMD_ENTRY_INC, ERR_CMD_ON);
-	err_puts("Err ready\0");
+//	err_puts("Err ready\0");
 	delay_ms(800);
 	
 	
