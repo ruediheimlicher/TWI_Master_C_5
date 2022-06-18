@@ -175,6 +175,5 @@ void readADCSlave (unsigned char address);
 void readDCF77(unsigned char address);
 void readEstrichSlave (unsigned char address);
 
-uint8_t UhrAbrufen(void);
 uint8_t  SevenSegment(uint8_t count,uint8_t dp, uint8_t dec_hex);
 

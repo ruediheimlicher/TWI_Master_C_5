@@ -197,7 +197,7 @@ static char SolarString[48];
 
 // Uhr
 
-volatile uint8_t  uhrstatus =0;
+//volatile uint8_t  uhrstatus =0;
 
 // defines fuer uhrstatus
 #define SYNC_OK		0	// Uhr ist synchronisiert
@@ -1009,30 +1009,6 @@ void readSR (void)
 	
 }
 
-uint8_t UhrAbrufen (void)
-{
-	/*
-	Knackpunkte:
-	min, std, tag
-	neueZeit
-	*/
-	//uint8_t i=0;
-	//lcd_clr_line(1);
-	/*
-	lcd_gotoxy(0,1);
-	lcd_puts("U\0");
-	lcd_putc(' ');
-	lcd_gotoxy(1,1);
-	*/
-		
-	//	DCF-Uhr lesen
-	uint8_t DCF77erfolg=0;
-	DCF77erfolg=SlavedatenLesen(DCF77_ADRESSE,(void*)DCF77daten);
-	
-	return DCF77erfolg;
-	// end Uhr lesen
-	
-}
 
 
 
@@ -1319,8 +1295,8 @@ int main (void)
 	//lcd_putc('-');	//	Erste Runde, Strich an letzter Stelle
 	//timer0();
 	/******************************************************************/
-	uhrstatus=0;
-	uhrstatus |= (1<<SYNC_NULL); // Uhr undef, warten auf DCF77
+//	uhrstatus=0;
+//	uhrstatus |= (1<<SYNC_NULL); // Uhr undef, warten auf DCF77
 	
 	initOSZI();
    
@@ -1384,6 +1360,7 @@ int main (void)
             i2c_init();
 				
 				delay_ms(50);
+            /*
 				rtc_init();
 				delay_ms(10);
 				uint8_t res=0;
@@ -1424,7 +1401,7 @@ int main (void)
 					err_gotoxy(0,1);
 					err_puts("D+\0");
 				}
-				
+				*/
 				wdt_reset();
 				sei();
 				
@@ -1624,8 +1601,13 @@ int main (void)
 				
 				// Eingang anzeigen
 				lcd_puts("iW \0");
-				lcd_puthex(in_startdaten);
+				lcd_puthex(in_startdaten); // Antwort auf out_startdaten (code, 0xC0)(
+            //lcd_putc(' ');
+            
+            lcd_puthex(in_enddaten); // Antwort auf compliment von in_startdaten
+
 				lcd_putc(' ');
+            
 				lcd_puthex(in_hbdaten);
 				lcd_puthex(in_lbdaten);
 				lcd_putc(' ');
@@ -1636,13 +1618,19 @@ int main (void)
 					lcd_puthex(inbuffer[j]);
 					//err_putc(inbuffer[j]);
 				}
-				OutCounter++;
+            lcd_gotoxy(10,0);
+            lcd_putint2(inbuffer[16]);
+            lcd_putc(':');
+            lcd_putint2(inbuffer[17]);
+ 				OutCounter++;
 				
 				// Uebertragung pruefen
 				
-				//lcd_gotoxy(6,0);
-				//lcd_puts("bc:\0");
-				//lcd_puthex(ByteCounter);
+				lcd_gotoxy(0,0);
+				lcd_puts("b");
+				lcd_puthex(OutCounter);
+            lcd_putc(' ');
+            lcd_puthex(inbuffer[47]);
             
             err_gotoxy(0,0);
 				err_puts("      \0");
@@ -1653,6 +1641,7 @@ int main (void)
 				err_gotoxy(19,0);
 				if (ByteCounter == SPI_BUFSIZE-1) // Uebertragung war vollstaendig
 				{
+               
 					if (out_startdaten + in_enddaten==0xFF)
 					{
 						err_putc('+');
@@ -1677,9 +1666,13 @@ int main (void)
 						err_putc('-');
 						err_clr_line(1);
 						err_gotoxy(0,1);
-						err_puts("ER1\0");
-                  err_putc(' ');
+						err_puts("ER1 ");
+                  err_putc('o');
+                  err_putc('S');
 						err_puthex(out_startdaten);
+                  err_putc(' ');
+                  err_putc('i');
+                  err_putc('E');
 						err_puthex(in_enddaten);
 						err_putc(' ');
 						err_puthex(out_startdaten + in_enddaten);
@@ -1690,7 +1683,7 @@ int main (void)
 						}
 						//errCounter++;
 					}
-					
+    //           spistatus |= (1<<SPI_SHIFT_IN_OK_BIT);
 				}
 				else 
 				{
@@ -1884,9 +1877,9 @@ int main (void)
 				lcd_puthex(SendOKCounter);
 				*/
 				
-				lcd_gotoxy(0,0);
+				lcd_gotoxy(0,3);
 				lcd_puts("      \0");
-				lcd_gotoxy(0,0);
+				lcd_gotoxy(0,3);
 				lcd_puts("in\0");
 				lcd_putc(' ');
 				//lcd_puthex(spistatus);
@@ -1894,7 +1887,7 @@ int main (void)
 				lcd_puthex(in_startdaten);
 				//delay_ms(100);
             outbuffer[42] = in_startdaten;
-            
+            //lcd_puthex(in_startdaten);
 				switch (in_startdaten) // Daten vom Webserver, liegen am Anfang der Schleife bereit 
 				{
 					case NULLTASK: // B0
@@ -2271,7 +2264,7 @@ int main (void)
 						//err_gotoxy(5,1);
 						//Zaehler fuer TWI-Loop
 						//err_puthex(loopCounterTWI++);
-						lcd_gotoxy(15,0);
+//						lcd_gotoxy(15,0);
 //						lcd_puts("U\0");
 						lcd_putc(' ');
 						OSZIBLO;
@@ -2290,11 +2283,11 @@ int main (void)
                      SchreibStatus=0;
                      LeseStatus=0;
 
-
+/*
                      uhrstatus &= ~(1<<SYNC_READY);
                      uhrstatus |= (1<<SYNC_OK);
                      uhrstatus &= ~(1<<SYNC_NEW);                 // TWI soll jetzt Daten senden
-
+*/
                    }
 						else
                   {
@@ -2315,22 +2308,24 @@ int main (void)
 						if (BUS_Status & (1<<TWI_CONTROLBIT))
 						{
 							LeseStatus=Read_Device;
-							SchreibStatus=Write_Device;
+                     LeseStatus |= (1<<WOZI);
+                     SchreibStatus=0; 
+							//SchreibStatus=Write_Device;
 						}
 						else 
 						{
 							SchreibStatus=0; 
 							LeseStatus=0;
 						}
+                  //LeseStatus=0;
+                  LeseStatus |= (1<<WOZI);
                   
-                  LeseStatus |= (1<<OG2);
-                  
-                  outbuffer[43] = LeseStatus;
-                  outbuffer[44] = SchreibStatus;
+                  outbuffer[43] = LeseStatus+1;
+                  outbuffer[44] = SchreibStatus+3;
 
-						
-						err_clr_line(1);
-						err_gotoxy(12,1);
+                  outbuffer[47] = OutCounter;
+						err_clr_line(2);
+						err_gotoxy(10,2);
 						err_putc('R');
 						//err_putc(' ');
 						//err_puthex(Read_Device);
@@ -2341,12 +2336,14 @@ int main (void)
 						//err_putc(' ');
 						//err_puthex(Write_Device);
 						err_puthex(SchreibStatus);
-						
+                  err_putc(' ');
 						// Version anzeigen
 						
+                  /*
 						err_gotoxy(0,1);
 						err_puts("V:\0");
 						err_puts(VERSION);
+                  */
                   
 						delay_ms(64);
 						in_startdaten=0;
@@ -2361,10 +2358,10 @@ int main (void)
 						Read_Err=0;
 						EEPROM_Err=0;
 						
-                  lcd_gotoxy(10,0);
-                  lcd_putint2(std);
-                  lcd_putc(':');
-                  lcd_putint2(min);
+      //            lcd_gotoxy(10,0);
+      //            lcd_putint2(std);
+      //            lcd_putc(':');
+       //           lcd_putint2(min);
 
 						if ((SchreibStatus || LeseStatus))		// Uhr nicht gerade am Synchronisieren
                      // && (twi_HI_count0 >= 0x02))//&&(TastaturCount==0))
@@ -2423,22 +2420,10 @@ int main (void)
 								if (SchreibStatus & (1<< HEIZUNG))	//schreiben an Heizung
 								{
 									delay_ms(2);
-									/*
-									 Byte 0:	Heizungsstatus 
-									 
-									 Bit 0,1: Brenner ON/OFF
-									 Bit 2		Halbstunde
-									 Bit 3:	Mode Tag/Nacht-Einstellung
-									 
-									 */
-									//err_gotoxy(0,1);
-									//err_puts("H\0");
-									
+										
 									uint8_t tagblock[buffer_size];
 									uint8_t Stundencode=0;
 									txbuffer[0]=0;
-									
-									// Brenner-Tagplan lesen
 									
 									wdt_reset();
 									
@@ -3426,6 +3411,7 @@ int main (void)
 									delay_ms(2);
 									wdt_reset();
 									twi_Call_count0++;
+                           
 									uint8_t wozierfolg=SlavedatenLesen(WOZI_ADRESSE, (void*)WoZiRXdaten);
 									wdt_reset();
 									if (wozierfolg)
@@ -3462,6 +3448,8 @@ int main (void)
                               outbuffer[7]= WoZiRXdaten[1];// Innentemperatur
 									}
 									
+                           outbuffer[7]= WoZiRXdaten[1];// Innentemperatur
+                           outbuffer[7] = 77;
 									LeseStatus &= ~(1<< WOZI);
 								}
 								
@@ -4026,47 +4014,10 @@ int main (void)
 								}
 								
 							} // DCF77-erfolg==0
+                     outbuffer[7]= 17;
 							
-							//	Kontrolle: Labor schreiben: Schalter ein-aus nach jeder Minute
-							//if (DCF77daten[0]!=LaborDaten[8])//letzter Minutenwert war anders
-							{
-								//					LaborDaten[0]=DCF77daten[0]% 2;		// ON bei geraden Minuten
-								//					LaborDaten[1]=DCF77daten[0]% 2+1;	// OFF bei ungeraden Minuten
-								//					LaborDaten[8]= DCF77daten[0];
-							}
+                     //	Kontrolle: Labor schreiben: Schalter ein-aus nach jeder Minute
 							
-							if ((Menu_Ebene & 0xF0)>0)	//	Anzeigen wenn Menu_Ebene >0 
-							{
-								//err_gotoxy(10,0);
-								//err_puts("Mn \0");
-								//err_puthex(Menu_Ebene);
-								//err_puts("   \0");
-								wdt_reset();
-								displayRaum(Raum_Thema, AnzeigeWochentag, Zeit.stunde, Menu_Ebene);
-								wdt_reset();
-								//err_gotoxy(15,0);
-								//err_puts(" ok\0");
-								//		lcd_gotoxy(10,3);
-								//		lcd_puthex(Menu_Ebene);
-								// Doppelpunkt am Schluss der Zeile blinken lassen
-								lcd_gotoxy(19,1); 
-								lcd_putc(':');
-								
-							}
-							else
-							{
-								// Punkt am Schluss der Zeile blinken lassen
-								//lcd_gotoxy(19,1); 
-								//					lcd_putc(165);
-								
-							}
-							/*
-							 err_gotoxy(15,1);
-							 err_puthex(SchreibStatus);
-							 err_gotoxy(18,1);
-							 err_puthex(LeseStatus);
-							 delay_ms(1000);
-							 */
 							
 							//err_clr_part(0,0,9);
 							
@@ -4077,18 +4028,20 @@ int main (void)
 							// TWI-Fehler angeben
 							
 														
-							 err_gotoxy(0,1);
-							 err_puts("          \0");
+							 err_gotoxy(0,2);
+							 err_puts("          ");
 							 
-							 err_gotoxy(0,1);
-							 err_puts("E:\0");
+							 err_gotoxy(0,2);
+							 err_puts("E:");
 							 err_putc('R');
 							 err_puthex(Read_Err);
 							 
+                     /*
 							 err_putc('W');
 							 err_puthex(Write_Err);
 							 err_putc('E');
 							 err_puthex(EEPROM_Err);
+                      */
 							 delay_ms(1000);
                      
                      outbuffer[FEHLERBYTE]=Read_Err;      // Byte 24
@@ -4215,11 +4168,12 @@ int main (void)
 							OSZIAHI;
 							
 						}//	if ((SchreibStatus || LeseStatus))
-						
 					}break; // default: DATATASK
 						
 				}  // switch in_startdaten
-				
+            err_gotoxy(0,3);
+            err_putint(twi_Call_count0);
+
 			} 
 			
 			// **************************************************
@@ -4760,35 +4714,7 @@ int main (void)
 								//Raum_Thema &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
 								//Menu_Ebene &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
 								
-								/*
-								 lcd_clr_line(0);
-								 lcd_clr_line(1);
-								 lcd_clr_line(2);
-								 lcd_clr_line(3);
-								 
-								 lcd_gotoxy(0,0);
-								 strcpy_P(titelbuffer, (PGM_P)pgm_read_word(&(RaumTable[(Raum_Thema>>4)])));
-								 lcd_puts(titelbuffer);
-								 
-								 lcd_gotoxy(12,0);
-								 lcd_put_wochentag(DCF77buffer[5]);
-								 lcd_gotoxy(15,0);
-								 lcd_put_zeit(DCF77buffer[0],DCF77buffer[1]);
-								 
-								 
-								 //lcd_gotoxy(9,0);
-								 //lcd_puthex(Raum_Thema);
-								 
-								 //lcd_gotoxy(12,0);
-								 //lcd_puthex(Menu_Ebene);
-								 
-								 //uint16_t aadr=(uint16_t)MenuTable[Raum_Thema>>4];// Bit 7-4
-								 //lcd_gotoxy(0,1);
-								 //lcd_puthex(Raum_Thema>>4);
-								 //lcd_gotoxy(3,1);
-								 //lcd_putint(adr);
-								 */
-								
+									
 								displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
 								
 								/*
