@@ -1128,7 +1128,7 @@ int main (void)
 	int8_t cmd;
 	int8_t send_cmd=0;
 	
-	
+   uint8_t add = 0;
 	//*********************************************************************
     
    
@@ -1809,12 +1809,33 @@ int main (void)
 				ByteCounter=0;
 				//timer0(); // Ueberwachung der Zeit zwischen zwei Bytes. ISR setzt bitpos und ByteCounter zurueck, loescht Bit 0 in spistatus
 				
-				// Anzeige, das  rxdata vorhanden ist
+				// Anzeige, dass  rxdata vorhanden ist
+            
+            out_startdaten=0xC0;
+            out_lbdaten=17;
+            out_hbdaten=33;
+            outbuffer[3] = OutCounter;
+           
+            for (i=24;i<42;i++)
+            {
+               outbuffer[i] = i+add;
+            }
+            add++;
+            outbuffer[41] = 33;
 				lcd_gotoxy(19,0);
 				lcd_putc('$');
 
-				
-				
+            err_gotoxy(0,3);
+            err_puthex(out_startdaten);
+            err_putc(' ');
+            for(i=4;i>0;i--)
+            {
+               err_puthex(outbuffer[i]);
+            }
+            err_putc(' ');
+            err_puthex(outbuffer[41]);
+            err_putc(' ');
+            err_putint(isrcounter);
 				
 				// SPI-Buffer vorwaertsschalten
 				/*
@@ -1885,6 +1906,7 @@ int main (void)
 				//lcd_puthex(spistatus);
 				//lcd_puthex(BUS_Status);
 				lcd_puthex(in_startdaten);
+            lcd_puthex(in_enddaten);
 				//delay_ms(100);
             outbuffer[42] = in_startdaten;
             //lcd_puthex(in_startdaten);
@@ -2308,7 +2330,7 @@ int main (void)
 						if (BUS_Status & (1<<TWI_CONTROLBIT))
 						{
 							LeseStatus=Read_Device;
-                     LeseStatus |= (1<<WOZI);
+                     //LeseStatus |= (1<<WOZI);
                      SchreibStatus=0; 
 							//SchreibStatus=Write_Device;
 						}
@@ -2318,7 +2340,7 @@ int main (void)
 							LeseStatus=0;
 						}
                   //LeseStatus=0;
-                  LeseStatus |= (1<<WOZI);
+                  //LeseStatus |= (1<<WOZI);
                   
                   outbuffer[43] = LeseStatus+1;
                   outbuffer[44] = SchreibStatus+3;
@@ -3408,11 +3430,18 @@ int main (void)
 								
 								if (LeseStatus & (1<< WOZI))	//lesen von Wozi
 								{
+                           
 									delay_ms(2);
 									wdt_reset();
 									twi_Call_count0++;
                            
 									uint8_t wozierfolg=SlavedatenLesen(WOZI_ADRESSE, (void*)WoZiRXdaten);
+                           
+                           //wozierfolg = 0;
+                           
+                           
+                           
+                           
 									wdt_reset();
 									if (wozierfolg)
 									{
@@ -4100,7 +4129,7 @@ int main (void)
 								}
 								
 								twi_Stat_count++;
-								err_gotoxy(18,1);
+								err_gotoxy(16,1);
 								//err_puts("rep err\0");
 								err_puthex(twi_Stat_count);
 								if (twi_Stat_count>4)		// debloc
@@ -4171,8 +4200,8 @@ int main (void)
 					}break; // default: DATATASK
 						
 				}  // switch in_startdaten
-            err_gotoxy(0,3);
-            err_putint(twi_Call_count0);
+  //          err_gotoxy(0,3);
+  //          err_putint(twi_Call_count0);
 
 			} 
 			
@@ -4224,114 +4253,7 @@ int main (void)
 		
 	#pragma mark Taste 0	
 		
-		wdt_reset();
 	
-      /*
-		// TWI mit Taste toggeln
-		if (!(PINB & (1<<PORTB0))) // Taste 0 TWI Ein/Aus
-		{
-			//err_gotoxy(12,0);
-			//err_puts("P0 Down\0");
-			//wdt_reset();
-			if (! (TastenStatus & (1<<PORTB0))) //Taste 0 war nicht nicht gedrueckt
-			{
-				TastenStatus |= (1<<PORTB0);
-				Tastencount=0;
-				//err_gotoxy(8,0);
-				//err_puts("P0 \0");
-				//lcd_putint(TastenStatus);
-				//delay_ms(800);
-			}
-			else
-			{
-				
-				
-				Tastencount ++;
-				//lcd_gotoxy(7,1);
-				//lcd_puts("TC \0");
-				//lcd_putint(Tastencount);
-				wdt_reset();
-				if (Tastencount >= Tastenprellen)
-				{
-					err_gotoxy(8,0);
-					err_puts("P0\0");
-					//err_putint(Tastencount);
-					err_putc(' ');
-					err_puthex(BUS_Status);
-					//err_putc('v');
-					
-					if (BUS_Status & (1<<TWI_CONTROLBIT)) //  TWI ist gesetzt > loeschen
-					{
-						//err_putc('1');
-						//BUS_Status |= (1<<2); // WEB request
-						
-						//BUS_Status &= ~(1<<3); // TWI wird OFF, Bit 1 auf L setzen
-						BUS_Status &= ~(1<<TWI_CONTROLBIT);
-						LeseStatus=0;
-						SchreibStatus=0;
-						PORTC &= ~(1<<TWI_CONTROLPIN); // TWI-LED OFF
-						
-						//web_request &= ~(1<<7);
-						//err_putc('n');
-						//err_puthex(BUS_Status);
-					}
-					else
-					{
-						
-						BUS_Status |= (1<<TWI_CONTROLBIT);
-						PORTC |= (1<<TWI_CONTROLPIN); // TWI-LED ON
-						
-					}
-					
-					
-					Tastencount=0;
-					TastenStatus &= ~(1<<PORTB0);
-					
-				}
-			}//else
-			
-		}
-		*/
-		wdt_reset();
-		
-		if (!(PINB & (1<<PB1))) // Taste 1
-		{
-			//lcd_gotoxy(12,1);
-			//lcd_puts("P1 Down\0");
-			
-			if (! (TastenStatus & (1<<PB1))) //Taste 1 war nicht gedrueckt
-			{
-				TastenStatus |= (1<<PB1);
-				Tastencount=0;
-				//lcd_gotoxy(3,1);
-				//lcd_puts("P1 \0");
-				//lcd_putint(Servoimpulsdauer);
-				//delay_ms(800);
-				
-			}
-			else
-			{
-				//lcd_gotoxy(3,1);
-				//lcd_puts("       \0");
-				
-				Tastencount ++;
-				if (Tastencount >= Tastenprellen)
-				{
-					i2c_stop();
-					i2c_debloc();
-					LeseStatus=0;
-					SchreibStatus=0;
-
-					Tastencount=0;
-					TastenStatus &= ~(1<<PB1);
-					
-					
-				}
-			}//	else
-			
-		} // Taste 1
-		
-		
 		/* ************************* 
 		 */
 		
