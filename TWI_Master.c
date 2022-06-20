@@ -109,7 +109,7 @@ static volatile uint8_t olderrcounter=0;
 volatile uint8_t sevenseg = 0;
 volatile uint8_t sevensegalt = 0;
 
-
+volatile uint8_t slavecount = 0;
 
 /* ************************************** */
 
@@ -1484,7 +1484,7 @@ int main (void)
 		if (((startdelay==0)||(startdelay==STARTDELAY))&& (((!(PINC & (1<<SDAPIN))) && PINC & (1<<SCLPIN)) ) )// SDA ist LO UND SCL ist HI (warten auf Ack)
       {
          err_gotoxy(15,1);
-         err_puts("ERR\0");
+         err_puts("SDAERR");
          
          /*
           
@@ -1554,8 +1554,8 @@ int main (void)
 			twi_LO_count0=0;
 			twi_LO_count1=0;
 			wdt_reset();
-			//err_gotoxy(15,1);
-			//err_puts("OK \0");
+			err_gotoxy(15,1);
+			err_puts("OK \0");
 						//err_puthex(tempWDT_Count);
 						//delay_ms(1000);
 
@@ -1635,7 +1635,7 @@ int main (void)
             err_gotoxy(0,0);
 				err_puts("      \0");
 
-            
+            err_clr_line(1);
 				err_gotoxy(19,0);
 				err_putc(' ');
 				err_gotoxy(19,0);
@@ -1645,6 +1645,7 @@ int main (void)
 					if (out_startdaten + in_enddaten==0xFF)
 					{
 						err_putc('+');
+                  
 						spistatus |= (1<<SUCCESS_BIT); // Bit fuer vollstaendige und korrekte  Uebertragung setzen
 						lcd_gotoxy(19,0);
 						lcd_putc(' ');
@@ -1663,8 +1664,9 @@ int main (void)
 					else 
 					{
 						spistatus &= ~(1<<SUCCESS_BIT); // Uebertragung fehlerhaft, Bit loeschen
+                 
 						err_putc('-');
-						err_clr_line(1);
+						//err_clr_line(1);
 						err_gotoxy(0,1);
 						err_puts("ER1 ");
                   err_putc('o');
@@ -1688,7 +1690,8 @@ int main (void)
 				else 
 				{
 					spistatus &= ~(1<<SUCCESS_BIT); //  Uebertragung unvollstaendig, Bit loeschen
-					err_clr_line(0);
+               err_putc('*');
+               //err_clr_line(0);
 					err_gotoxy(0,0);
 					err_puts("ER2\0");
 					err_putc(' ');
@@ -1812,7 +1815,7 @@ int main (void)
 				// Anzeige, dass  rxdata vorhanden ist
             
             out_startdaten=0xC0;
-            out_lbdaten=17;
+            out_lbdaten=18;
             out_hbdaten=33;
             outbuffer[3] = OutCounter;
            
@@ -1822,8 +1825,13 @@ int main (void)
             }
             add++;
             outbuffer[41] = 33;
+            
+            outbuffer[23] = slavecount;
+            
 				lcd_gotoxy(19,0);
 				lcd_putc('$');
+            
+            
 
             err_gotoxy(0,3);
             err_puthex(out_startdaten);
@@ -1837,26 +1845,7 @@ int main (void)
             err_putc(' ');
             err_putint(isrcounter);
 				
-				// SPI-Buffer vorwaertsschalten
-				/*
-				uint8_t wert0=spibuffer[15];
-				for(i=15;i>0;i--)
-				{
-					spibuffer[i]=spibuffer[i-1];
-				}
-				spibuffer[0]=wert0;
-				*/
-				
-				/*
-				// SPI-Buffer rueckwaertsschalten
-				
-				uint8_t wert0=spibuffer[0];
-				for(i=0;i<15;i++)
-				{
-					spibuffer[i]=spibuffer[i+1];
-				}
-				spibuffer[15]=wert0;
-				*/
+
 				
 			}//		if (!(spistatus & (1<<ACTIVE_BIT)))
 		}//											(IS_CS_HC_ACTIVE) 
@@ -2339,8 +2328,8 @@ int main (void)
 							SchreibStatus=0; 
 							LeseStatus=0;
 						}
-                  //LeseStatus=0;
-                  //LeseStatus |= (1<<WOZI);
+                  LeseStatus=0;
+       //           LeseStatus |= (1<<WOZI);
                   
                   outbuffer[43] = LeseStatus+1;
                   outbuffer[44] = SchreibStatus+3;
@@ -3424,6 +3413,7 @@ int main (void)
 									 */
 									SchreibStatus &= ~(1<< WOZI);
                            outbuffer[20] = wozistatus;
+                           
 								}
                         
                         // Lesen von Wozi
@@ -3434,6 +3424,7 @@ int main (void)
 									delay_ms(2);
 									wdt_reset();
 									twi_Call_count0++;
+                           slavecount++;
                            
 									uint8_t wozierfolg=SlavedatenLesen(WOZI_ADRESSE, (void*)WoZiRXdaten);
                            
@@ -4333,537 +4324,7 @@ int main (void)
 			
 			
 			
-		/*
-			Tastenwert=0;
-			initADC(tastatur_kanal);
-			//err_gotoxy(10,1);
-			//err_puts("TR \0");
-			
-			Tastenwert=(uint8_t)(readKanal(tastatur_kanal)>>2);
-			*/
-         Tastenwert=0;
-			//err_puthex(Tastenwert);
-			
-			//			closeADC();
-			
-			//uint8_t Taste=-1;
-			//		Tastenwert/=8;
-			//		Tastenwert*=3;
-			//		err_clr_line(1);
-			//		err_gotoxy(0,1);
-			//		err_puts("Taste \0");
-			//		err_putint(Taste);
-			//		delay_ms(200);
-			
-			
-			
-			if (Tastenwert>23) // ca Minimalwert der Matrix
-			{
-				//			wdt_reset();
-				/*
-				 0: Wochenplaninit
-				 1: IOW 8* 2 Bytes auf Bus laden
-				 2: Menu der aktuellen Ebene nach oben
-				 3: IOW 2 Bytes vom Bus in Reg laden
-				 4: Auf aktueller Ebene nach rechts (Heizung: Vortag lesen und anzeigen)									
-				 5: Ebene tiefer
-				 6: Auf aktueller Ebene nach links (Heizung: Folgetag lesen und anzeigen)									
-				 7: 
-				 8: Menu der aktuellen Ebene nach unten
-				 9: DCF77 lesen
-				 
-				 12: Ebene hšher
-				 */
-				TastaturCount++;
-				if (TastaturCount>=8)	//	Prellen
-				{
-					
-					//err_clr_line(1);
-					//err_gotoxy(0,1);
-					//err_puts("ADC:\0");
-					//err_putint(Tastenwert);
-					
-					Taste=Tastenwahl(Tastenwert);
-					
-					//err_gotoxy(12,1);
-					//err_puts("T:\0");
-					//err_gotoxy(14,1);
-					//err_putint2(Taste);
-					/*
-					 err_putint2(Taste);
-					 //delay_ms(1200);
-					 //err_clr_line(1);
-					 */
-					TastaturCount=0;
-					Tastenwert=0x00;
-					//				uint8_t i=0;
-					
-					//			uint8_t inByte0=0;
-					//			uint8_t inByte1=0;
-					
-					uint8_t inBytes[4]={};
-					//			uint8_t pos=0;
-					//			lcd_gotoxy(12,0);
-					//			lcd_put_wochentag(DCF77buffer[5]);
-					//			lcd_gotoxy(15,0);
-					//			lcd_put_zeit(DCF77buffer[0],DCF77buffer[1]);
-					
-					//			Taste=0xff;
-					
-					
-					//Taste=4;
-					
-					switch (Taste)
-					{
-						case 0://WochenplanInit
-						{ 
-							break;
-							// Blinken auf C2
-							
-						}
-							break;
-							
-							
-						case 1:
-						{
-							//
-						}
-							break;
-							
-						case 2:											//	Menu vorwaertsschalten	
-						{
-							lcd_cls();
-							/*
-							 err_gotoxy(0,1);
-							 err_puts("M:\0");
-							 err_putint2(Menu_Ebene & 0xF0);
-							 err_gotoxy(10,1);
-							 err_puts("T:\0");
-							 err_putint2(Taste);
-							 //					delay_ms(1000);
-							 */
-							switch (Menu_Ebene & 0xF0)					//	Bits 7-4, Menu_Ebene
-							{
-								case 0x00:								//	oberste Ebene, Raeume
-								{
-									//	(Raum_Thema & 0xF0): Bit 7-4, Pos in Raum-Liste
-									if ((Raum_Thema & 0xF0)<0x70)	//	Ende der Raum-Liste noch nicht erreicht
-										
-									{
-										Raum_Thema += 0x10;			//	Naechster Raum
-									}
-									else
-									{
-										lcd_gotoxy(14,0);
-										lcd_puts(">>\0");				//Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-									}
-									//err_cls();
-									//err_gotoxy(10,1);
-									//err_puts("Main:\0");
-									//err_puthex(Raum_Thema);
-									//							delay_ms(800);
-									//lcd_cls();	
-									/*
-									 lcd_clr_line(0);
-									 lcd_gotoxy(0,0);
-									 //	RaumTable: Namen der RŠume
-									 strcpy_P(titelbuffer, (PGM_P)pgm_read_word(&(RaumTable[Raum_Thema>>4])));//Bit 7 - 4
-									 //	Raum anzeigen:
-									 lcd_puts(titelbuffer);
-									 delay_ms(1800);
-									 */
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);			//Anzeige aktualisieren
-									
-								}
-									break;
-									
-								case 0x10:								// erste Unterebene, Thema
-								{
-									if ((Raum_Thema & 0x0F)<0x07)	//	(Raum_Thema & 0x0F): Bit 3-0, Pos in Themen-Liste
-									{
-										
-										Raum_Thema += 0x01;			//naechstes Thema
-									}
-									else
-									{
-										lcd_gotoxy(13,0);
-										lcd_puts(">>\0");				// Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-									}
-									
-									//lcd_gotoxy(9,0);
-									//lcd_puthex(Raum_Thema);
-									//lcd_gotoxy(12,0);
-									//lcd_puthex(Menu_Ebene);
-									
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde),Menu_Ebene);			//Anzeige aktualisieren
-									
-								}
-									break;
-								case 	0x20:								// zweite Unterebene
-								{
-									
-								}break;
-							}//switch Menu_Ebene
-							
-						}
-							break;
-							
-						case 3:	//
-						{
-						
-						}break;
-							
-						case 4:	// Vortag
-						{
-							
-							//err_clr_line(0);
-							//err_gotoxy(0,0);
-							//err_puts("Taste 4\0");
-							//delay_ms(50);
-							//err_clr_line(0);
-							
-							
-							switch (Menu_Ebene & 0xF0)//Bits 7-4	
-							{
-								case 0x00:	//oberste Ebene
-								{
-									//err_clr_line(0);
-									//err_puts("E0\0");
-									
-								}break;
-									
-								case 0x10: // erste Ebene
-								{
-									
-									
-								}break;
-									
-								case 0x20: // zweite Ebene, Plan
-								{
-									err_clr_line(0);
-									err_puts("T4 E2 \0");
-									err_puthex(Raum_Thema);
-									err_putc(' ');
-									if ((Raum_Thema & 0x0F)==0x00)	//Plan
-									{	
-										//err_puts(" Plan\0");
-										if (AnzeigeWochentag & 0x0F)	//	Nicht Montag
-										{
-											AnzeigeWochentag -= 0x01;	//VorTag
-										}
-										else
-										{
-											lcd_gotoxy(3,0);
-											lcd_puts("Es ist schon MO!\0");
-											delay_ms(400);
-											
-										}
-										
-										//err_clr_line(1);
-										
-										//err_puts("Tag:\0");
-										//err_putint(AnzeigeWochentag & 0x0F);
-										displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-										
-										//uint8_t tagblock[buffer_size];
-										//uint8_t taglesenerfolg=TagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock, 0, (AnzeigeWochentag));
-										//TagZeigen(tagblock,(Menu_Ebene & 0x0F));
-										//delay_ms(800);
-									}	// if Plan
-									else
-									{
-										
-									}
-									err_putint1(AnzeigeWochentag);
-									delay_ms(800);
-								}break;	//	case 0x20
-									
-									
-							}//switch Menu_Ebene & 0xF0
-							
-						} break; // case Vortag
-							
-							
-						case 5:								// Ebene tiefer
-						{
-							//Taste=99;
-							lcd_clr_line(1);
-							//lcd_gotoxy(0,1);
-							//lcd_puts("Taste 5\0");
-							//delay_ms(200);
-							//lcd_clr_line(1);
-							//err_gotoxy(3,0);
-							//err_puthex(DCF77daten[5]);
-							Raum_Thema &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-							Menu_Ebene &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-							if ((Menu_Ebene & 0xF0)<0x20)
-							{
-								switch (Menu_Ebene & 0xF0)
-								{
-									case 0x00: // erste Ebene, Thema
-									{
-										Menu_Ebene = 0x10;
-										AnzeigeWochentag=(Zeit.wochentag) & 0x0F; 
-									}break;
-										
-									case 0x10:
-									{
-										Menu_Ebene = 0x20;
-										lcd_CGRAMInit_A();							//	Zeichen fuer Wochenplan setzen
-										//Objekt_Wochentag =0x00;						//	Objekt 0 seetzen
-										//Objekt_Wochentag = ((DCF77daten[5]) & 0x0F);		//	Wochentag setzen								//Objekt_Wochentag = 0x06;
-										//err_gotoxy(5,0);
-										//delay_ms(200);
-										Objekt_Wochentag = ((Zeit.wochentag) & 0x0F);		//	Wochentag setzen								//Objekt_Wochentag = 0x06;
-										lcd_cls();
-										
-									}break;
-										
-										
-										
-										
-								}//switch Menu_Ebene
-								
-								
-								
-								
-								//Raum_Thema &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-								//Menu_Ebene &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-								
-									
-								displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-								
-								/*
-								 uint8_t adr=8*(Raum_Thema>>4)+(Raum_Thema & 0x0F); // Page: Bits 7-4 Zeile: Bits 3-0
-								 strcpy_P(menubuffer, (PGM_P)pgm_read_word(&(P_MenuTable[adr])));//Bit 3 - 0	Untermenu im PROGMEM
-								 //lcd_clr_line(1);
-								 lcd_gotoxy(0,1);
-								 //lcd_puthex((uint8_t)&adr);
-								 lcd_puts(menubuffer);
-								 */	
-								
-							}
-						}				break;
-							
-						case 6: // Folgetag
-						{
-							/*
-							 err_clr_line(1);
-							 err_gotoxy(0,1);
-							 err_puts("Taste 6\0");
-							 delay_ms(50);
-							 err_clr_line(1);
-							 */
-							
-							switch (Menu_Ebene & 0xF0)//Bits 7-4	
-							{
-								case 0x00:	//oberste Ebene
-									
-									err_clr_line(0);
-									err_puts("E0\0");
-									
-									break;
-									
-								case 0x10: // erste Ebene
-								{
-									
-									
-								}break;
-									
-								case 0x20: // zweite Ebene, Plan
-								{
-									
-									err_clr_line(0);
-									err_puts("T6 E2 \0");
-									err_puthex(Raum_Thema);
-									err_putc(' ');
-									if ((Raum_Thema & 0x0F)==0x00)	//Plan
-									{
-										//err_puts(" Plan\0");
-										if ((AnzeigeWochentag & 0x0F)< 6)	//	Nicht Sonntag
-										{
-											AnzeigeWochentag += 0x01;	//naechster Tag
-										}
-										else
-										{
-											lcd_gotoxy(3,0);
-											lcd_puts("Es ist schon SO!\0");
-											delay_ms(400);
-											
-										}
-										//err_putint1(AnzeigeWochentag);
-										//delay_ms(800);
-										
-										err_clr_line(1);
-										err_puts("Tag:\0");
-										err_putint(AnzeigeWochentag & 0x0F);
-										displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-										
-										//uint8_t tagblock[buffer_size];
-										//uint8_t taglesenerfolg=TagLesen(EEPROM_WOCHENPLAN_ADRESSE, tagblock, 0, (Menu_Ebene & 0x0F));
-										//TagZeigen(tagblock,(Menu_Ebene & 0x0F));
-									}	// if Plan
-									else
-									{
-										
-									}
-									
-								}break;	// case 0x20
-									
-							} // Menu_Ebene & 0xF0
-							
-						} break; // case Folgetag
-							
-							//case 7:
-							
-							//	break;
-							
-							
-						case 8:												//Menu rueckwaertsschalten
-						{
-							//err_gotoxy(0,1);
-							//err_puts("M:\0");
-							//err_putint2(Menu_Ebene & 0xF0);
-							//err_gotoxy(10,1);
-							//err_puts("T:\0");
-							//err_putint2(Taste);
-							//delay_ms(1000);
-							
-							switch (Menu_Ebene & 0xF0)//Bits 7-4				oberste Ebene, Raeume
-							{
-								case 0x00:
-								{
-									
-									//					lcd_gotoxy(12,0);
-									//					lcd_puthex(Raum_Thema);
-									//delay_ms(800);
-									//					pos=Raum_Thema;
-									//					pos>>4;
-									
-									if ((Raum_Thema & 0xF0)>0)
-									{
-										
-										Raum_Thema -= 0x10;				//vorheriges Thema
-									}
-									else
-									{
-										lcd_gotoxy(14,0);
-										lcd_puts("<<\0");					//Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-										
-									}
-									//lcd_gotoxy(9,0);
-									//lcd_puthex(Raum_Thema);
-									
-									//lcd_gotoxy(12,0);
-									//lcd_puthex(Menu_Ebene);
-									//							lcd_cls();	
-									/*
-									 lcd_gotoxy(0,0);
-									 lcd_clr_line(0);
-									 //	RaumTable: Namen der RŠume
-									 strcpy_P(titelbuffer, (PGM_P)pgm_read_word(&(RaumTable[Raum_Thema>>4])));//Bit 7 - 4
-									 //	Raum anzeigen:
-									 lcd_puts(titelbuffer);
-									 */						
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);			//Anzeige aktualisieren
-								}
-									break;
-									
-								case 0x10:									// erste Unterebene, Thema
-								{
-									if ((Raum_Thema & 0x0F)>0x00)
-									{								
-										Raum_Thema -= 0x01;				//vorhergehendes Thema
-									}
-									else
-									{
-										lcd_gotoxy(14,0);
-										lcd_puts(">>\0");					// Ende der Liste
-										delay_ms(800);
-										lcd_gotoxy(14,0);
-										lcd_puts("  \0");
-									}
-									
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);				//Anzeige aktualisieren
-									
-								}
-									break;
-									
-							}// switch Menu_Ebene
-							
-						}
-							break;
-							
-							//case 9:
-							
-							
-							//	break;
-							
-							
-						case 12:// Ebene hoeher
-						{
-							//Taste=99;
-							
-							//lcd_clr_line(1);
-							//lcd_gotoxy(0,1);
-							//lcd_puts("Taste 12\0");
-							//delay_ms(100);
-							//lcd_clr_line(1);
-							switch (Menu_Ebene & 0xF0)
-							{
-								case 0x00:
-								{
-									
-								}break;
-									
-								case 0x10:
-								{
-									Menu_Ebene = 0x00;							//Ebene 0
-									//Menu_Ebene += (DCF77daten[5] & 0x0F);		//	Wochentag setzen
-									Raum_Thema &=0xF0;
-									AnzeigeWochentag=(Zeit.wochentag) & 0x0F;
-									lcd_CGRAMInit_Titel();	//	Zeichen fuer Titel setzen
-									lcd_cls();
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde), Menu_Ebene);	//	Anzeige aktualisieren
-									
-									
-								}break;
-								case 0x20:
-								{
-									Menu_Ebene = 0x10;							//	Ebene 1
-									Menu_Ebene &= 0xF0;							//	Bits 7 - 4 behalten, Bits 3-0 loeschen
-									//Menu_Ebene += (DCF77daten[5] & 0x0F);		//	Wochentag setzen
-									Raum_Thema &=0xF0;
-									AnzeigeWochentag=(Zeit.wochentag) & 0x0F;
-									lcd_CGRAMInit_Titel();	//	Zeichen fuer Titel setzen
-									lcd_cls();
-									displayRaum(Raum_Thema, AnzeigeWochentag, (Zeit.stunde>>4), Menu_Ebene);	//	Anzeige aktualisieren
-									
-									
-								}break;
-									
-									
-							}//switch MenuEbene
-							
-							
-						}break;
-							
-							
-					}//switch Taste
-					
-				}
-				//TastaturCount=0x00;
-			}
-			
+	         Tastenwert=0;
 		}								// end kein WEB-Request
 		
 		else							// start WEB-Request:  Bit 0 ist LOW

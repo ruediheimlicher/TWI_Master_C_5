@@ -377,18 +377,18 @@ uint8_t SlavedatenLesen(const unsigned char ADRESSE, uint8_t *Daten)
 {
 	
 	uint8_t readerfolg=0;
+   err_gotoxy(0,0);
 	readerfolg=(i2c_start(ADRESSE+I2C_WRITE));
 	if (readerfolg==0)
 	{
-		/*
-		 err_cls();
-		 err_puts("Start Read OK\0 ");
-		 delay_ms(800);
-		 */
+		
+      
+      err_puts("Start Read OK\0 ");
 		delay_ms(1);
 		readerfolg=i2c_write(0x00); //Buffer Startadresse zum Auslesen
 		if (readerfolg==0)
 		{
+         err_puts("Start Write OK\0 ");
 			//lcd_clr_line(1);
 			/*
 			 lcd_cls();
@@ -399,6 +399,7 @@ uint8_t SlavedatenLesen(const unsigned char ADRESSE, uint8_t *Daten)
 		}
 		else
 		{
+         err_puts("Start Write ERR\0 ");
 			i2c_stop();
 			//err_clr_part(1,9,19);
 			//err_puthex(ADRESSE);
@@ -412,6 +413,7 @@ uint8_t SlavedatenLesen(const unsigned char ADRESSE, uint8_t *Daten)
 		readerfolg=i2c_rep_start(ADRESSE+I2C_READ); //Lesen beginnen
 		if (readerfolg==0)
 		{
+         
 			/*
 			 lcd_cls();
 			 lcd_gotoxy(0,2);
@@ -461,10 +463,11 @@ uint8_t SlavedatenLesen(const unsigned char ADRESSE, uint8_t *Daten)
 	} 
 	else
 	{
+      err_puts("i2c ERR\0 ");
 		//i2c_stop();
 		
 			//err_clr_part(1,9,19);
-			//err_puthex(ADRESSE);
+			err_puthex(ADRESSE);
 			//err_puts(" r strt er\0");
 			//delay_ms(10);
 	}
